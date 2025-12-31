@@ -17,6 +17,9 @@ export function Overview({ state }: OverviewProps) {
   const running = tasks.filter(t => t.status === 'running').length;
   const pending = tasks.filter(t => t.status === 'pending').length;
 
+  const agents = Object.values(state.agents);
+  const activeAgents = agents.filter(a => a.status === 'active' || a.status === 'idle');
+
   return (
     <Box flexDirection="column" padding={1}>
       <Text bold>PHASE: {state.currentPhase}</Text>
@@ -27,6 +30,23 @@ export function Overview({ state }: OverviewProps) {
         <Text>Completed: <Text color="green">{completed}</Text></Text>
         <Text>Running: <Text color="yellow">{running}</Text></Text>
         <Text>Pending: <Text dimColor>{pending}</Text></Text>
+      </Box>
+      <Box flexDirection="column" marginTop={1}>
+        <Text bold>Agents:</Text>
+        {activeAgents.length === 0 ? (
+          <Text dimColor>No active agents</Text>
+        ) : (
+          activeAgents.map(agent => (
+            <Box key={agent.id}>
+              <Text>
+                {agent.id} <Text dimColor>[{agent.status}]</Text>
+                {agent.currentTask && (
+                  <Text color="cyan"> working on {agent.currentTask}</Text>
+                )}
+              </Text>
+            </Box>
+          ))
+        )}
       </Box>
     </Box>
   );

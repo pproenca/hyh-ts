@@ -5,6 +5,7 @@ export { Daemon } from './core/daemon.js';
 export { StateManager } from './state/manager.js';
 export { TrajectoryLogger } from './trajectory/logger.js';
 export { IPCServer } from './ipc/server.js';
+export { IPCClient } from './ipc/client.js';
 
 // Agent Management
 export { AgentManager } from './agents/manager.js';

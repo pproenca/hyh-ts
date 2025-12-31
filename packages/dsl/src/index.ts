@@ -22,7 +22,19 @@ export type {
   CompiledInvariant,
   Correction,
   Checkpoint,
+  ScalingConfig,
+  ScalingTier,
+  PreCompactConfig,
 } from './types/compiled.js';
+
+// Config
+export {
+  defineConfig,
+  type HyhConfig,
+  type DaemonConfig,
+  type ClaudeConfig,
+  type GitConfig,
+} from './config.js';
 
 export type {
   Duration,

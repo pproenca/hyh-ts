@@ -2,6 +2,7 @@
 import { Command } from 'commander';
 import { registerCompileCommand } from './commands/compile.js';
 import { registerStatusCommand } from './commands/status.js';
+import { registerTaskCommand } from './commands/task.js';
 
 const program = new Command();
 
@@ -20,5 +21,6 @@ program
 // Register commands
 registerCompileCommand(program);
 registerStatusCommand(program);
+registerTaskCommand(program);
 
 program.parse();

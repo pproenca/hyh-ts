@@ -1,5 +1,5 @@
 // packages/daemon/src/core/daemon.test.ts
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { Daemon } from './daemon.js';
 import { CheckerChain } from '../checkers/chain.js';
 import { TddChecker } from '../checkers/tdd.js';
@@ -115,6 +115,41 @@ describe('Daemon', () => {
 
     expect(result.violation).toBeDefined();
     expect(result.violation?.type).toBe('tdd');
+
+    await daemon.stop();
+  });
+
+  it('should apply correction when violation detected', async () => {
+    daemon = new Daemon({ worktreeRoot: tempDir });
+
+    // Create a CheckerChain with TDD checker
+    const checkerChain = new CheckerChain([
+      new TddChecker({
+        test: '**/*.test.ts',
+        impl: 'src/**/*.ts',
+        agentName: 'worker',
+      }),
+    ]);
+    daemon.loadCheckerChain(checkerChain);
+
+    // Mock agent
+    const mockAgent = { injectPrompt: vi.fn() };
+    daemon.setAgent('worker-1', mockAgent);
+
+    await daemon.start();
+
+    // Simulate violation
+    const result = await daemon.processAgentEvent('worker-1', {
+      type: 'tool_use',
+      tool: 'Write',
+      path: 'src/impl.ts',
+      timestamp: Date.now(),
+      agentId: 'worker-1',
+    });
+
+    expect(result.violation).toBeDefined();
+    expect(result.correction).toBeDefined();
+    expect(mockAgent.injectPrompt).toHaveBeenCalled();
 
     await daemon.stop();
   });

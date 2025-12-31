@@ -7,6 +7,7 @@ import { TrajectoryLogger } from '../trajectory/logger.js';
 import { IPCServer } from '../ipc/server.js';
 import { TaskStatus } from '../types/state.js';
 import { CheckerChain } from '../checkers/chain.js';
+import { CorrectionApplicator, type Correction } from '../corrections/applicator.js';
 import type { Violation, TrajectoryEvent } from '../checkers/types.js';
 
 interface DaemonOptions {
@@ -16,6 +17,11 @@ interface DaemonOptions {
 
 export interface ProcessEventResult {
   violation?: Violation;
+  correction?: Correction;
+}
+
+export interface Agent {
+  injectPrompt: (message: string) => void | Promise<void>;
 }
 
 export class Daemon {
@@ -27,6 +33,8 @@ export class Daemon {
   private running: boolean = false;
   private checkerChain: CheckerChain | null = null;
   private trajectoryHistory: TrajectoryEvent[] = [];
+  private readonly agents: Map<string, Agent> = new Map();
+  private correctionApplicator: CorrectionApplicator | null = null;
 
   constructor(options: DaemonOptions) {
     this.worktreeRoot = options.worktreeRoot;
@@ -63,6 +71,19 @@ export class Daemon {
     this.checkerChain = checkerChain;
   }
 
+  setAgent(agentId: string, agent: Agent): void {
+    this.agents.set(agentId, agent);
+    // Create/update CorrectionApplicator with current agents
+    this.correctionApplicator = new CorrectionApplicator({
+      injectPrompt: async (id: string, message: string) => {
+        const targetAgent = this.agents.get(id);
+        if (targetAgent) {
+          await targetAgent.injectPrompt(message);
+        }
+      },
+    });
+  }
+
   async processAgentEvent(
     agentId: string,
     event: TrajectoryEvent
@@ -81,9 +102,13 @@ export class Daemon {
         this.trajectoryHistory
       );
 
-      // 3. Return any violation
+      // 3. If violation, apply correction if available
       if (violation) {
-        return { violation };
+        const correction = violation.correction;
+        if (correction && this.correctionApplicator) {
+          await this.correctionApplicator.apply(agentId, correction);
+        }
+        return { violation, correction };
       }
     }
 

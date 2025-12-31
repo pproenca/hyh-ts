@@ -255,6 +255,9 @@ describe('Daemon', () => {
       };
     });
 
+    // Mock spawnAgents to avoid actually spawning processes
+    vi.spyOn(daemon, 'spawnAgents').mockResolvedValue(undefined);
+
     // Run one tick
     const tickResult = await daemon.tick();
 
@@ -332,6 +335,53 @@ describe('Daemon', () => {
     expect(gateResult.passed).toBeDefined();
 
     await daemon.stop();
+  });
+
+  it('should spawn agents when tick detects pending tasks', async () => {
+    // Arrange
+    const workflowPath = path.join(tempDir, '.hyh', 'workflow.json');
+    await fs.mkdir(path.dirname(workflowPath), { recursive: true });
+    await fs.writeFile(workflowPath, JSON.stringify({
+      name: 'test',
+      orchestrator: 'orchestrator',
+      agents: { worker: { name: 'worker', model: 'sonnet', role: 'implementation' } },
+      phases: [{ name: 'implement', agent: 'worker', queue: 'tasks', parallel: true }],
+      queues: { tasks: { name: 'tasks', timeout: 600000 } },
+      gates: {},
+    }));
+
+    daemon = new Daemon({ worktreeRoot: tempDir });
+    await daemon.start();
+    await daemon.loadWorkflow(workflowPath);
+    await daemon.stateManager.update(s => {
+      s.currentPhase = 'implement';
+      s.tasks = {
+        't1': {
+          id: 't1',
+          description: 'Test task',
+          status: 'pending',
+          claimedBy: null,
+          claimedAt: null,
+          startedAt: null,
+          completedAt: null,
+          attempts: 0,
+          lastError: null,
+          dependencies: [],
+          files: [],
+          timeoutSeconds: 600,
+        },
+      };
+    });
+
+    // Mock spawnAgents to avoid actually spawning processes
+    const spawnSpy = vi.spyOn(daemon, 'spawnAgents').mockResolvedValue(undefined);
+
+    // Act
+    const result = await daemon.tick();
+
+    // Assert
+    expect(result.spawnsTriggered).toBeGreaterThan(0);
+    expect(spawnSpy).toHaveBeenCalled();
   });
 
   it('should save artifact when task completes', async () => {

@@ -363,9 +363,12 @@ export class Daemon {
     const overdueAgents = this.heartbeatMonitor.getOverdueAgents();
     result.heartbeatsMissed = overdueAgents.map((a) => a.agentId);
 
-    // 2. Check spawn triggers
+    // 2. Check spawn triggers AND ACTUALLY SPAWN
     const spawns = await this.checkSpawnTriggers();
-    result.spawnsTriggered = spawns.length;
+    if (spawns.length > 0) {
+      await this.spawnAgents(spawns);
+      result.spawnsTriggered = spawns.length;
+    }
 
     // 3. Check phase transitions
     if (await this.checkPhaseTransition()) {

@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { Command } from 'commander';
+import { registerCompileCommand } from './commands/compile.js';
 
 const program = new Command();
 
@@ -14,5 +15,8 @@ program
   .action(() => {
     console.log('hyh v0.1.0');
   });
+
+// Register commands
+registerCompileCommand(program);
 
 program.parse();

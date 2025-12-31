@@ -52,15 +52,24 @@ export class TaskBuilder {
   }
 
   build(): TaskDefinition {
-    return {
+    const result: TaskDefinition = {
       id: this._id,
-      description: this._description,
       files: this._files,
       dependencies: this._dependencies,
-      instructions: this._instructions,
-      success: this._success,
-      wave: this._wave,
     };
+    if (this._description) {
+      result.description = this._description;
+    }
+    if (this._instructions) {
+      result.instructions = this._instructions;
+    }
+    if (this._success) {
+      result.success = this._success;
+    }
+    if (this._wave !== undefined) {
+      result.wave = this._wave;
+    }
+    return result;
   }
 }
 

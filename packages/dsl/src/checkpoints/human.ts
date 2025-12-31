@@ -21,13 +21,20 @@ export const human = {
     }
 
     if (questionOrOptions) {
-      return {
+      const result: Checkpoint = {
         id,
         type: 'approval',
-        question: questionOrOptions.question,
-        timeout: questionOrOptions.timeout,
-        onTimeout: questionOrOptions.onTimeout,
       };
+      if (questionOrOptions.question) {
+        result.question = questionOrOptions.question;
+      }
+      if (questionOrOptions.timeout !== undefined) {
+        result.timeout = questionOrOptions.timeout;
+      }
+      if (questionOrOptions.onTimeout) {
+        result.onTimeout = questionOrOptions.onTimeout;
+      }
+      return result;
     }
 
     return {

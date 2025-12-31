@@ -5,8 +5,19 @@ import { Correction } from '../types/compiled.js';
 const underlyingCorrections = new WeakMap<object, Correction>();
 
 // Chainable correction type - then is both callable and has Correction properties
+interface ChainableThen {
+  (next: Correction): ChainableCorrection;
+  type?: Correction['type'];
+  message?: string;
+  to?: 'orchestrator' | 'human';
+  max?: number;
+  backoff?: number;
+  preserveTypes?: string[];
+  then?: ChainableThen;
+}
+
 type ChainableCorrection = Correction & {
-  then: ((next: Correction) => ChainableCorrection) & Partial<ChainableCorrection>;
+  then: ChainableThen;
 };
 
 // Debug helper to get the underlying correction
@@ -46,25 +57,36 @@ function makeChainable(correction: Correction): ChainableCorrection {
         if (prop === 'then') {
           return makeChainable(correction.then).then;
         }
-        return (correction.then as Record<string | symbol, unknown>)[prop];
+        return (correction.then as unknown as Record<string | symbol, unknown>)[prop];
       }
       return undefined;
     },
     apply(target, thisArg, args) {
       return target.apply(thisArg, args as [Correction]);
     },
-  });
+  }) as ChainableThen;
 
-  // Build the result object
+  // Build the result object conditionally to avoid undefined values
+  // Use type assertion since we're constructing this carefully
   const result = {
     type: correction.type,
-    message: correction.message,
-    to: correction.to,
-    max: correction.max,
-    backoff: correction.backoff,
-    preserveTypes: correction.preserveTypes,
     then: thenProxy,
   } as ChainableCorrection;
+  if (correction.message) {
+    result.message = correction.message;
+  }
+  if (correction.to) {
+    result.to = correction.to;
+  }
+  if (correction.max !== undefined) {
+    result.max = correction.max;
+  }
+  if (correction.backoff !== undefined) {
+    result.backoff = correction.backoff;
+  }
+  if (correction.preserveTypes) {
+    result.preserveTypes = correction.preserveTypes;
+  }
 
   // Store the underlying correction
   underlyingCorrections.set(result, correction);
@@ -88,10 +110,11 @@ export const correct = {
   },
 
   block(message?: string): ChainableCorrection {
-    return makeChainable({
-      type: 'block',
-      message,
-    });
+    const correction: Correction = { type: 'block' };
+    if (message) {
+      correction.message = message;
+    }
+    return makeChainable(correction);
   },
 
   restart(): ChainableCorrection {
@@ -107,11 +130,14 @@ export const correct = {
   },
 
   retry(options: { max: number; backoff?: number }): ChainableCorrection {
-    return makeChainable({
+    const correction: Correction = {
       type: 'retry',
       max: options.max,
-      backoff: options.backoff,
-    });
+    };
+    if (options.backoff !== undefined) {
+      correction.backoff = options.backoff;
+    }
+    return makeChainable(correction);
   },
 
   escalate(to: 'orchestrator' | 'human'): ChainableCorrection {

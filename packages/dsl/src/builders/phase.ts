@@ -97,19 +97,30 @@ export class PhaseBuilder {
 
   // Build just this phase (for internal use)
   buildPhase(): CompiledPhase {
-    return {
+    const result: CompiledPhase = {
       name: this._name,
       agent: this._agent ?? '',
-      queue: this._queue,
       expects: this._expects,
       forbids: this._forbids,
       requires: this._requires,
       outputs: this._outputs,
-      populates: this._populates,
       parallel: this._parallel,
-      gate: this._gate,
-      then: this._then,
-      checkpoint: this._checkpoint,
     };
+    if (this._queue) {
+      result.queue = this._queue;
+    }
+    if (this._populates) {
+      result.populates = this._populates;
+    }
+    if (this._gate) {
+      result.gate = this._gate;
+    }
+    if (this._then) {
+      result.then = this._then;
+    }
+    if (this._checkpoint) {
+      result.checkpoint = this._checkpoint;
+    }
+    return result;
   }
 }

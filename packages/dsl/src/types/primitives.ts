@@ -59,7 +59,11 @@ export function parseToolSpec(spec: ToolSpec): ParsedToolSpec {
       throw new Error(`Invalid tool spec: ${spec}`);
     }
     const [, tool, pattern] = match;
-    return { tool: tool!, pattern: pattern || undefined };
+    const result: ParsedToolSpec = { tool: tool! };
+    if (pattern) {
+      result.pattern = pattern;
+    }
+    return result;
   }
   return spec;
 }

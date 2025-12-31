@@ -30,12 +30,17 @@ export class GateBuilder {
   }
 
   build(): CompiledGate {
-    return {
+    const result: CompiledGate = {
       name: this._name,
       requires: this._requires,
-      onFail: this._onFail,
-      onFailFinal: this._onFailFinal,
     };
+    if (this._onFail) {
+      result.onFail = this._onFail;
+    }
+    if (this._onFailFinal) {
+      result.onFailFinal = this._onFailFinal;
+    }
+    return result;
   }
 }
 

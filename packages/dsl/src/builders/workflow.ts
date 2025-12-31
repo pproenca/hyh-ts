@@ -26,7 +26,9 @@ export class WorkflowBuilder {
 
   resumable(options?: ResumeOptions): this {
     this._resumable = true;
-    this._resumeOptions = options;
+    if (options) {
+      this._resumeOptions = options;
+    }
     return this;
   }
 

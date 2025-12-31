@@ -4,18 +4,20 @@
 export { Daemon } from './core/daemon.js';
 export { StateManager } from './state/manager.js';
 export { TrajectoryLogger } from './trajectory/logger.js';
-export { AgentManager } from './agents/manager.js';
 export { IPCServer } from './ipc/server.js';
-export { CheckerChain } from './checkers/chain.js';
 
-// Types
+// Types - State
 export type {
   WorkflowState,
   TaskState,
   AgentState,
-  QueueState,
+  CheckpointState,
+  ClaimResult,
 } from './types/state.js';
 
+export { TaskStatus } from './types/state.js';
+
+// Types - Trajectory
 export type {
   TrajectoryEvent,
   ToolUseEvent,
@@ -23,8 +25,8 @@ export type {
   SpawnEvent,
 } from './types/trajectory.js';
 
+// Types - IPC
 export type {
   IPCRequest,
   IPCResponse,
-  IPCEvent,
 } from './types/ipc.js';

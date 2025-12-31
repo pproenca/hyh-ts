@@ -25,6 +25,13 @@ export interface ProcessEventResult {
   correction?: Correction;
 }
 
+export interface TickResult {
+  spawnsTriggered: number;
+  heartbeatsMissed: string[];
+  phaseTransitioned: boolean;
+  correctionsApplied: number;
+}
+
 export interface Agent {
   injectPrompt: (message: string) => void | Promise<void>;
 }
@@ -238,6 +245,37 @@ export class Daemon {
       from: fromPhase,
       to: targetPhase,
     });
+  }
+
+  async tick(): Promise<TickResult> {
+    const result: TickResult = {
+      spawnsTriggered: 0,
+      heartbeatsMissed: [],
+      phaseTransitioned: false,
+      correctionsApplied: 0,
+    };
+
+    // 1. Check heartbeats for all registered agents
+    const overdueAgents = this.heartbeatMonitor.getOverdueAgents();
+    result.heartbeatsMissed = overdueAgents.map((a) => a.agentId);
+
+    // 2. Check spawn triggers
+    const spawns = await this.checkSpawnTriggers();
+    result.spawnsTriggered = spawns.length;
+
+    // 3. Check phase transitions
+    if (await this.checkPhaseTransition()) {
+      const state = await this.stateManager.load();
+      if (state && this.phaseManager) {
+        const nextPhase = this.phaseManager.getNextPhase(state.currentPhase);
+        if (nextPhase) {
+          await this.transitionPhase(nextPhase);
+          result.phaseTransitioned = true;
+        }
+      }
+    }
+
+    return result;
   }
 
   private registerHandlers(): void {

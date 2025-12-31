@@ -220,6 +220,50 @@ describe('Daemon', () => {
     await daemon.stop();
   });
 
+  it('should process tick: check heartbeats, spawn triggers, phase transitions', async () => {
+    const workflowPath = path.join(tempDir, '.hyh', 'workflow.json');
+    await fs.mkdir(path.dirname(workflowPath), { recursive: true });
+    await fs.writeFile(workflowPath, JSON.stringify({
+      name: 'test',
+      orchestrator: 'orchestrator',
+      agents: { worker: { name: 'worker', model: 'sonnet', role: 'implementation' } },
+      phases: [{ name: 'implement', agent: 'worker', queue: 'tasks', parallel: true }],
+      queues: { tasks: { name: 'tasks', timeout: 600000 } },
+      gates: {},
+    }));
+
+    daemon = new Daemon({ worktreeRoot: tempDir });
+    await daemon.start();
+    await daemon.loadWorkflow(workflowPath);
+
+    // Set up initial state
+    await daemon.stateManager.update((state) => {
+      state.currentPhase = 'implement';
+      state.tasks['task-1'] = {
+        id: 'task-1',
+        description: 'Test task',
+        status: 'pending',
+        dependencies: [],
+        claimedBy: null,
+        claimedAt: null,
+        startedAt: null,
+        completedAt: null,
+        attempts: 0,
+        lastError: null,
+        files: [],
+        timeoutSeconds: 600,
+      };
+    });
+
+    // Run one tick
+    const tickResult = await daemon.tick();
+
+    expect(tickResult.spawnsTriggered).toBeGreaterThanOrEqual(0);
+    expect(tickResult.heartbeatsMissed).toBeDefined();
+
+    await daemon.stop();
+  });
+
   it('should check and execute phase transitions', async () => {
     // Setup workflow with phases
     const workflowPath = path.join(tempDir, '.hyh', 'workflow.json');

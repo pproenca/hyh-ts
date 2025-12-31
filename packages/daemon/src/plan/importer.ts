@@ -18,20 +18,21 @@ export class PlanImporter {
       const match = section.match(/##\s+Task\s+(\d+):\s+(.+)/);
       if (!match) continue;
 
-      const [, num, description] = match;
+      const num = match[1]!;
+      const description = match[2]!;
       const id = `task-${num}`;
 
       // Parse files
       const filesMatch = section.match(/Files?:\s*(.+)/i);
       const files = filesMatch
-        ? filesMatch[1].split(',').map(f => f.trim())
+        ? filesMatch[1]!.split(',').map(f => f.trim())
         : [];
 
       // Parse dependencies
       const depsMatch = section.match(/Dependencies?:\s*(.+)/i);
       let dependencies: string[] = [];
-      if (depsMatch && depsMatch[1].toLowerCase() !== 'none') {
-        dependencies = depsMatch[1]
+      if (depsMatch && depsMatch[1]!.toLowerCase() !== 'none') {
+        dependencies = depsMatch[1]!
           .split(',')
           .map(d => d.trim().toLowerCase().replace(/task\s+/i, 'task-'));
       }

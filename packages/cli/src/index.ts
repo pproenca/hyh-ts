@@ -9,6 +9,7 @@ import { registerVerifyCompleteCommand } from './commands/verify-complete.js';
 import { registerDevCommand } from './commands/dev.js';
 import { registerValidateCommand } from './commands/validate.js';
 import { registerHeartbeatCommand } from './commands/heartbeat.js';
+import { registerResumeCommand } from './commands/resume.js';
 
 const program = new Command();
 
@@ -34,5 +35,6 @@ registerVerifyCompleteCommand(program);
 registerDevCommand(program);
 registerValidateCommand(program);
 registerHeartbeatCommand(program);
+registerResumeCommand(program);
 
 program.parse();

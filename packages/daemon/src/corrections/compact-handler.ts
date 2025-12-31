@@ -37,7 +37,10 @@ export class CompactHandler {
 
     // Always keep at least the last message
     if (preserved.length === 0 && messages.length > 0) {
-      preserved.push(messages[messages.length - 1]);
+      const lastMessage = messages[messages.length - 1];
+      if (lastMessage) {
+        preserved.push(lastMessage);
+      }
     }
 
     return preserved;

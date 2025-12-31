@@ -39,6 +39,14 @@ export class AgentManager {
     };
 
     const agent = new AgentProcess(config);
+
+    // Wire up event handler to remove agent from map on exit
+    agent.on('event', (event: { type: string }) => {
+      if (event.type === 'exit') {
+        this.agents.delete(agentId);
+      }
+    });
+
     this.agents.set(agentId, agent);
 
     await agent.start();
@@ -60,11 +68,37 @@ export class AgentManager {
     await Promise.all(killPromises);
   }
 
+  /**
+   * Stop all running agents and clear the agent map.
+   * Alias for killAll() with additional cleanup.
+   */
+  async stopAll(): Promise<void> {
+    const stopPromises = Array.from(this.agents.values()).map((a) => a.stop());
+    await Promise.all(stopPromises);
+    this.agents.clear();
+  }
+
   get(agentId: string): AgentProcess | undefined {
     return this.agents.get(agentId);
   }
 
+  /**
+   * Get an agent by its ID.
+   * Returns undefined if the agent is not tracked or has exited.
+   */
+  getAgent(agentId: string): AgentProcess | undefined {
+    return this.agents.get(agentId);
+  }
+
   getActiveAgents(): AgentProcess[] {
+    return Array.from(this.agents.values()).filter((a) => a.isRunning);
+  }
+
+  /**
+   * Get all active (running) agents.
+   * Alias for getActiveAgents().
+   */
+  activeAgents(): AgentProcess[] {
     return Array.from(this.agents.values()).filter((a) => a.isRunning);
   }
 }

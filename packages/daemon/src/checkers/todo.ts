@@ -19,7 +19,12 @@ export class TodoChecker implements Checker {
     return true;
   }
 
-  check(_event: TrajectoryEvent, context: CheckContext): Violation | null {
+  check(event: TrajectoryEvent, context: CheckContext): Violation | null {
+    // Only check on stop events if checkBeforeStop is true
+    if (this.options.checkBeforeStop && event.type !== 'stop') {
+      return null;
+    }
+
     try {
       const content = fs.readFileSync(this.options.file, 'utf-8');
       const incompleteItems = content.match(/- \[ \]/g) || [];

@@ -27,10 +27,9 @@ describe('TodoChecker', () => {
     });
 
     const event: TrajectoryEvent = {
-      type: 'message',
+      type: 'stop',
       timestamp: Date.now(),
       agentId: 'worker-1',
-      content: 'stop',
     };
 
     const ctx: CheckContext = {
@@ -56,10 +55,9 @@ describe('TodoChecker', () => {
     });
 
     const event: TrajectoryEvent = {
-      type: 'message',
+      type: 'stop',
       timestamp: Date.now(),
       agentId: 'worker-1',
-      content: 'stop',
     };
 
     const ctx: CheckContext = {
@@ -80,10 +78,9 @@ describe('TodoChecker', () => {
     });
 
     const event: TrajectoryEvent = {
-      type: 'message',
+      type: 'stop',
       timestamp: Date.now(),
       agentId: 'worker-1',
-      content: 'stop',
     };
 
     const ctx: CheckContext = {

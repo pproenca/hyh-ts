@@ -87,6 +87,30 @@ export function registerRunCommand(program: Command): void {
           process.exit(0);
         });
 
+        // Check for plan.md and import tasks
+        const planPath = path.join(projectDir, 'plan.md');
+        try {
+          await fs.access(planPath);
+          console.log('Found plan.md, importing tasks...');
+
+          const { PlanImporter } = await import('@hyh/daemon');
+          const importer = new PlanImporter();
+          const planContent = await fs.readFile(planPath, 'utf-8');
+          const parsed = importer.parseMarkdown(planContent);
+          const taskStates = importer.toTaskStates(parsed);
+
+          // Add tasks to state
+          await daemon.stateManager.update(s => {
+            for (const [taskId, taskState] of Object.entries(taskStates)) {
+              s.tasks[taskId] = taskState;
+            }
+          });
+
+          console.log(`Imported ${parsed.length} tasks from plan.md`);
+        } catch {
+          // No plan.md, continue without importing
+        }
+
         if (!options.tui) {
           console.log('Running in headless mode. Press Ctrl+C to stop.');
         } else {

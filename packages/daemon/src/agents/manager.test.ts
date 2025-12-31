@@ -64,7 +64,7 @@ describe('AgentManager Lifecycle', () => {
   });
 
   afterEach(async () => {
-    await manager.stopAll();
+    await manager.killAll();
     await fs.rm(tmpDir, { recursive: true });
   });
 
@@ -82,10 +82,10 @@ describe('AgentManager Lifecycle', () => {
     agent.on('event', (e: unknown) => events.push(e));
 
     expect(agent.isRunning).toBe(true);
-    expect(manager.getAgent(agent.agentId)).toBe(agent);
+    expect(manager.get(agent.agentId)).toBe(agent);
 
     await agent.stop();
-    expect(manager.getAgent(agent.agentId)).toBeUndefined();
+    expect(manager.get(agent.agentId)).toBeUndefined();
   });
 
   it('should track multiple agents', async () => {
@@ -105,9 +105,9 @@ describe('AgentManager Lifecycle', () => {
       tools: ['Write'],
     });
 
-    expect(manager.getAgent(agent1.agentId)).toBe(agent1);
-    expect(manager.getAgent(agent2.agentId)).toBe(agent2);
-    expect(manager.activeAgents()).toHaveLength(2);
+    expect(manager.get(agent1.agentId)).toBe(agent1);
+    expect(manager.get(agent2.agentId)).toBe(agent2);
+    expect(manager.getActiveAgents()).toHaveLength(2);
   });
 
   it('should stop all agents', async () => {
@@ -127,10 +127,10 @@ describe('AgentManager Lifecycle', () => {
       tools: ['Write'],
     });
 
-    expect(manager.activeAgents().length).toBe(2);
+    expect(manager.getActiveAgents().length).toBe(2);
 
-    await manager.stopAll();
+    await manager.killAll();
 
-    expect(manager.activeAgents()).toHaveLength(0);
+    expect(manager.getActiveAgents()).toHaveLength(0);
   });
 });

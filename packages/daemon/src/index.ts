@@ -15,6 +15,7 @@ export { TrajectoryLogger } from './trajectory/logger.js';
 // IPC
 export { IPCServer } from './ipc/server.js';
 export { IPCClient } from './ipc/client.js';
+export type { IPCClientOptions } from './ipc/client.js';
 
 // Agent Management
 export { AgentManager } from './agents/manager.js';

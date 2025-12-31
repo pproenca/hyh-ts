@@ -4,15 +4,23 @@ import type { IPCRequest, IPCResponse } from '../types/ipc.js';
 
 export type EventCallback = (event: unknown) => void;
 
+export interface IPCClientOptions {
+  requestTimeout?: number; // Default: 30000ms (30 seconds)
+}
+
 export class IPCClient {
   private socket: net.Socket | null = null;
   private readonly socketPath: string;
+  private readonly requestTimeout: number;
   private buffer: string = '';
   private pendingResolve: ((response: IPCResponse) => void) | null = null;
+  private pendingReject: ((error: Error) => void) | null = null;
+  private requestTimer: NodeJS.Timeout | null = null;
   private eventListeners: Map<string, Set<EventCallback>> = new Map();
 
-  constructor(socketPath: string) {
+  constructor(socketPath: string, options: IPCClientOptions = {}) {
     this.socketPath = socketPath;
+    this.requestTimeout = options.requestTimeout ?? 30000;
   }
 
   async connect(): Promise<void> {
@@ -35,9 +43,14 @@ export class IPCClient {
             if ('type' in message && message.type === 'event') {
               this.emitEvent(message.event, message.data);
             } else if (this.pendingResolve) {
-              // It's a response to a request
+              // It's a response to a request - clear timeout and resolve
+              if (this.requestTimer) {
+                clearTimeout(this.requestTimer);
+                this.requestTimer = null;
+              }
               this.pendingResolve(message as IPCResponse);
               this.pendingResolve = null;
+              this.pendingReject = null;
             }
           }
         }
@@ -58,8 +71,17 @@ export class IPCClient {
       throw new Error('Not connected');
     }
 
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
       this.pendingResolve = resolve;
+      this.pendingReject = reject;
+
+      // Set timeout to prevent hanging forever
+      this.requestTimer = setTimeout(() => {
+        this.pendingResolve = null;
+        this.pendingReject = null;
+        reject(new Error(`Request timed out after ${this.requestTimeout}ms`));
+      }, this.requestTimeout);
+
       this.socket!.write(JSON.stringify(req) + '\n');
     });
   }

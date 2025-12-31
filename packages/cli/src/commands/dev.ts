@@ -20,11 +20,6 @@ export function registerDevCommand(program: Command): void {
 
       console.log('Starting hyh in development mode...');
       console.log(`Workflow: ${absolutePath}`);
-
-      // TODO: Implement file watching
-      // TODO: Start daemon
-      // TODO: Start TUI or log mode
-
-      console.log('Development mode not fully implemented yet');
+      console.log('Note: Full development mode requires daemon and TUI integration (coming soon)');
     });
 }

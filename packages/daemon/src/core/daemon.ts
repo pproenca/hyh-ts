@@ -41,6 +41,7 @@ export interface Agent {
 export class Daemon {
   private readonly worktreeRoot: string;
   private readonly socketPath: string;
+  /** Public for testing and integration scenarios that need direct state access */
   readonly stateManager: StateManager;
   private readonly trajectory: TrajectoryLogger;
   private readonly ipcServer: IPCServer;

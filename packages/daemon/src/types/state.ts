@@ -84,6 +84,15 @@ export const LogEntrySchema = z.object({
 
 export type LogEntry = z.infer<typeof LogEntrySchema>;
 
+// Todo progress schema
+export const TodoProgressSchema = z.object({
+  total: z.number(),
+  completed: z.number(),
+  incomplete: z.array(z.string()),
+});
+
+export type TodoProgress = z.infer<typeof TodoProgressSchema>;
+
 // Full workflow state schema
 export const WorkflowStateSchema = z.object({
   workflowId: z.string(),
@@ -96,6 +105,7 @@ export const WorkflowStateSchema = z.object({
   checkpoints: z.record(z.string(), CheckpointStateSchema).default({}),
   pendingHumanActions: z.array(z.unknown()).default([]),
   recentLogs: z.array(LogEntrySchema).optional(),
+  todo: TodoProgressSchema.optional(),
 });
 
 export type WorkflowState = z.infer<typeof WorkflowStateSchema>;

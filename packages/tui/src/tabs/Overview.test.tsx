@@ -260,4 +260,82 @@ describe('Overview Tab', () => {
       expect(output).toContain('No active agents');
     });
   });
+
+  describe('Todo progress display', () => {
+    it('should show todo completion percentage', () => {
+      const state = createWorkflowState({
+        currentPhase: 'implement',
+        todo: {
+          total: 10,
+          completed: 7,
+          incomplete: ['item1', 'item2', 'item3'],
+        },
+      });
+
+      const { lastFrame } = render(<Overview state={state} />);
+
+      expect(lastFrame()).toContain('Todo: 7/10 (70%)');
+    });
+
+    it('should show incomplete items if any', () => {
+      const state = createWorkflowState({
+        currentPhase: 'implement',
+        todo: {
+          total: 3,
+          completed: 1,
+          incomplete: ['Fix tests', 'Update docs'],
+        },
+      });
+
+      const { lastFrame } = render(<Overview state={state} />);
+
+      expect(lastFrame()).toContain('Fix tests');
+      expect(lastFrame()).toContain('Update docs');
+    });
+
+    it('should not show todo section when no todo data', () => {
+      const state = createWorkflowState({
+        currentPhase: 'implement',
+      });
+
+      const { lastFrame } = render(<Overview state={state} />);
+
+      expect(lastFrame()).not.toContain('Todo:');
+    });
+
+    it('should not show todo section when total is 0', () => {
+      const state = createWorkflowState({
+        currentPhase: 'implement',
+        todo: {
+          total: 0,
+          completed: 0,
+          incomplete: [],
+        },
+      });
+
+      const { lastFrame } = render(<Overview state={state} />);
+
+      expect(lastFrame()).not.toContain('Todo:');
+    });
+
+    it('should limit displayed incomplete items to 5', () => {
+      const state = createWorkflowState({
+        currentPhase: 'implement',
+        todo: {
+          total: 10,
+          completed: 2,
+          incomplete: ['Item 1', 'Item 2', 'Item 3', 'Item 4', 'Item 5', 'Item 6', 'Item 7', 'Item 8'],
+        },
+      });
+
+      const { lastFrame } = render(<Overview state={state} />);
+      const output = lastFrame() || '';
+
+      // First 5 should be shown
+      expect(output).toContain('Item 1');
+      expect(output).toContain('Item 5');
+      // Should show "and X more" message
+      expect(output).toContain('and 3 more');
+    });
+  });
 });

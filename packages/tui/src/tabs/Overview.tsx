@@ -1,10 +1,32 @@
 import React from 'react';
 import { Box, Text } from 'ink';
 import { ProgressBar } from '../components/ProgressBar.js';
-import type { WorkflowState } from '@hyh/daemon';
+import type { WorkflowState, TodoProgress } from '@hyh/daemon';
 
 interface OverviewProps {
   state: WorkflowState | null;
+}
+
+function TodoProgressDisplay({ todo }: { todo?: TodoProgress }) {
+  if (!todo || todo.total === 0) return null;
+
+  const pct = Math.round((todo.completed / todo.total) * 100);
+
+  return (
+    <Box flexDirection="column" marginTop={1}>
+      <Text bold>Todo: {todo.completed}/{todo.total} ({pct}%)</Text>
+      {todo.incomplete.length > 0 && (
+        <Box flexDirection="column" marginLeft={2}>
+          {todo.incomplete.slice(0, 5).map((item, i) => (
+            <Text key={i} color="yellow">- {item}</Text>
+          ))}
+          {todo.incomplete.length > 5 && (
+            <Text dimColor>... and {todo.incomplete.length - 5} more</Text>
+          )}
+        </Box>
+      )}
+    </Box>
+  );
 }
 
 export function Overview({ state }: OverviewProps) {
@@ -48,6 +70,7 @@ export function Overview({ state }: OverviewProps) {
           ))
         )}
       </Box>
+      <TodoProgressDisplay todo={state.todo} />
     </Box>
   );
 }

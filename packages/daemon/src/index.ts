@@ -76,6 +76,7 @@ export type {
   AgentState,
   CheckpointState,
   ClaimResult,
+  TodoProgress,
 } from './types/state.js';
 
 export { TaskStatus } from './types/state.js';

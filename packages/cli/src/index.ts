@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 import { Command } from 'commander';
 import { registerCompileCommand } from './commands/compile.js';
+import { registerInitCommand } from './commands/init.js';
+import { registerRunCommand } from './commands/run.js';
 import { registerStatusCommand } from './commands/status.js';
 import { registerTaskCommand } from './commands/task.js';
 
@@ -20,6 +22,8 @@ program
 
 // Register commands
 registerCompileCommand(program);
+registerInitCommand(program);
+registerRunCommand(program);
 registerStatusCommand(program);
 registerTaskCommand(program);
 

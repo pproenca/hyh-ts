@@ -3,6 +3,32 @@ import { Command } from 'commander';
 import * as path from 'node:path';
 import * as fs from 'node:fs/promises';
 import { pathToFileURL } from 'node:url';
+import type { HyhConfig } from '@hyh/dsl';
+
+interface RunOptions {
+  tui: boolean;
+  config?: string;
+}
+
+/**
+ * Load hyh configuration from hyh.config.ts or specified path.
+ * Returns empty config if no file found.
+ */
+async function loadConfig(projectDir: string, configPath?: string): Promise<HyhConfig> {
+  const configFile = configPath
+    ? path.resolve(projectDir, configPath)
+    : path.join(projectDir, 'hyh.config.ts');
+
+  try {
+    const { default: config } = await import(pathToFileURL(configFile).href);
+    return config as HyhConfig;
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ERR_MODULE_NOT_FOUND') {
+      return {}; // No config file, use defaults
+    }
+    throw error;
+  }
+}
 
 export function registerRunCommand(program: Command): void {
   program
@@ -10,7 +36,8 @@ export function registerRunCommand(program: Command): void {
     .description('Run a workflow')
     .argument('<workflow>', 'Path to workflow.ts file')
     .option('--no-tui', 'Run without TUI (headless mode)')
-    .action(async (workflowPath: string, options: { tui: boolean }) => {
+    .option('-c, --config <path>', 'Path to config file')
+    .action(async (workflowPath: string, options: RunOptions) => {
       const absolutePath = path.resolve(workflowPath);
       const projectDir = path.dirname(absolutePath);
       const outputDir = path.join(projectDir, '.hyh');
@@ -40,6 +67,12 @@ export function registerRunCommand(program: Command): void {
         const { compileToDir } = await import('@hyh/dsl');
         await compileToDir(workflow, outputDir);
         console.log(`Compiled to ${outputDir}`);
+
+        // Load config
+        const config = await loadConfig(projectDir, options.config);
+        if (config.daemon?.logLevel) {
+          console.log(`Log level: ${config.daemon.logLevel}`);
+        }
 
         // Import and start daemon
         const { Daemon } = await import('@hyh/daemon');

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Box, Text } from 'ink';
-import { TextInput, Select, Confirm } from '@inkjs/ui';
+import { TextInput, Select, ConfirmInput } from '@inkjs/ui';
 
 interface WorkflowConfig {
   name: string;
@@ -33,20 +33,24 @@ export function Builder({ onComplete }: BuilderProps) {
     setStep('confirm');
   };
 
-  const handleConfirm = (confirmed: boolean) => {
-    if (confirmed && config.name && config.model && config.parallel) {
+  const handleConfirm = () => {
+    if (config.name && config.model && config.parallel) {
       onComplete(config as WorkflowConfig);
-    } else {
-      setStep('name');
-      setConfig({});
     }
+  };
+
+  const handleCancel = () => {
+    setStep('name');
+    setConfig({});
   };
 
   return (
     <Box flexDirection="column">
-      <Text bold color="cyan" marginBottom={1}>
-        Create Your Workflow
-      </Text>
+      <Box marginBottom={1}>
+        <Text bold color="cyan">
+          Create Your Workflow
+        </Text>
+      </Box>
 
       {step === 'name' && (
         <Box>
@@ -89,7 +93,7 @@ export function Builder({ onComplete }: BuilderProps) {
       {step === 'confirm' && (
         <Box flexDirection="column">
           <Text>Create workflow "{config.name}" with {config.model} and {config.parallel} parallel agents?</Text>
-          <Confirm onConfirm={handleConfirm} />
+          <ConfirmInput onConfirm={handleConfirm} onCancel={handleCancel} />
         </Box>
       )}
     </Box>

@@ -14,6 +14,7 @@ import { registerLogsCommand } from './commands/logs.js';
 import { registerSimulateCommand } from './commands/simulate.js';
 import { registerMetricsCommand } from './commands/metrics.js';
 import { registerSubagentVerifyCommand } from './commands/subagent-verify.js';
+import { registerDemoCommand } from './commands/demo.js';
 
 const program = new Command();
 
@@ -44,5 +45,6 @@ registerLogsCommand(program);
 registerSimulateCommand(program);
 registerMetricsCommand(program);
 registerSubagentVerifyCommand(program);
+registerDemoCommand(program);
 
 program.parse();

@@ -59,6 +59,12 @@ export const SubscribeRequestSchema = z.object({
   channel: z.string().min(1),
 });
 
+export const GetLogsRequestSchema = z.object({
+  command: z.literal('get_logs'),
+  limit: z.number().positive().default(20),
+  agentId: z.string().optional(),
+});
+
 // Union of all request types
 export const IPCRequestSchema = z.discriminatedUnion('command', [
   GetStateRequestSchema,
@@ -72,6 +78,7 @@ export const IPCRequestSchema = z.discriminatedUnion('command', [
   PlanResetRequestSchema,
   HeartbeatRequestSchema,
   SubscribeRequestSchema,
+  GetLogsRequestSchema,
 ]);
 
 export type IPCRequest = z.infer<typeof IPCRequestSchema>;

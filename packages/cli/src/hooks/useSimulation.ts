@@ -28,15 +28,22 @@ export interface SimulationState {
   progress: number;
 }
 
+const EMPTY_STEP: SimulationStep = {
+  phase: '',
+  agents: [],
+  tasks: [],
+  events: [],
+};
+
 export function useSimulation(
   steps: SimulationStep[],
   intervalMs: number = 800
 ): SimulationState {
   const [stepIndex, setStepIndex] = useState(0);
-  const [isComplete, setIsComplete] = useState(false);
+  const [isComplete, setIsComplete] = useState(steps.length === 0);
 
   useEffect(() => {
-    if (isComplete) return;
+    if (isComplete || steps.length === 0) return;
 
     const timer = setInterval(() => {
       setStepIndex((i) => {
@@ -52,12 +59,12 @@ export function useSimulation(
     return () => clearInterval(timer);
   }, [isComplete, steps.length, intervalMs]);
 
-  const progress = isComplete
+  const progress = isComplete || steps.length === 0
     ? 100
     : (stepIndex / steps.length) * 100;
 
   return {
-    current: steps[stepIndex] as SimulationStep,
+    current: steps[stepIndex] ?? EMPTY_STEP,
     stepIndex,
     isComplete,
     progress,

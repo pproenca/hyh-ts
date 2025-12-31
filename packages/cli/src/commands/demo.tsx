@@ -1,6 +1,6 @@
 import { Command } from 'commander';
 import React from 'react';
-import { render, Box, Text } from 'ink';
+import { render, Box, Text, useApp } from 'ink';
 import chalk from 'chalk';
 import { Banner } from '../components/Banner.js';
 import { Simulation } from '../components/Simulation.js';
@@ -118,20 +118,31 @@ function createDemoSteps(): SimulationStep[] {
 }
 
 function DemoApp({ mode, speed }: { mode: 'simulation' | 'create'; speed: number }) {
+  const { exit } = useApp();
   const [showSummary, setShowSummary] = React.useState(false);
+  const [builderResult, setBuilderResult] = React.useState<{ name: string; model: string; parallel: number } | null>(null);
 
   const handleSimulationComplete = () => {
     setShowSummary(true);
   };
 
   const handleBuilderComplete = (config: { name: string; model: string; parallel: number }) => {
-    console.log(chalk.green('\n✓ Workflow configuration created!'));
-    console.log(chalk.dim(`  Name: ${config.name}`));
-    console.log(chalk.dim(`  Model: ${config.model}`));
-    console.log(chalk.dim(`  Parallel: ${config.parallel}`));
-    console.log(chalk.cyan('\nNext: Run `hyh init` to generate workflow.ts'));
-    process.exit(0);
+    setBuilderResult(config);
+    setTimeout(() => exit(), 100); // Allow final render before exit
   };
+
+  if (builderResult) {
+    return (
+      <Box flexDirection="column" marginTop={1}>
+        <Text color="green" bold>✓ Workflow configuration created!</Text>
+        <Text dimColor>  Name: {builderResult.name}</Text>
+        <Text dimColor>  Model: {builderResult.model}</Text>
+        <Text dimColor>  Parallel: {builderResult.parallel}</Text>
+        <Text>{'\n'}</Text>
+        <Text color="cyan">Next: Run `hyh init` to generate workflow.ts</Text>
+      </Box>
+    );
+  }
 
   if (showSummary) {
     return (

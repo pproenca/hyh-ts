@@ -1,0 +1,18 @@
+{
+  "neodev": {
+    "library": {
+      "enabled": true,
+      "plugins": true
+    }
+  },
+  "lspconfig": {
+    "ts_ls": {
+      "typescript.preferences.importModuleSpecifier": "relative",
+      "typescript.suggest.completeFunctionCalls": true,
+      "typescript.inlayHints.parameterNames.enabled": "all",
+      "typescript.inlayHints.variableTypes.enabled": true,
+      "typescript.inlayHints.propertyDeclarationTypes.enabled": true,
+      "typescript.inlayHints.functionLikeReturnTypes.enabled": true
+    }
+  }
+}

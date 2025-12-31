@@ -26,10 +26,13 @@ describe('MustProgressChecker', () => {
     const oldTime = Date.now() - 50000;
     checker['lastActivity'] = oldTime;
 
-    checker.check({
-      type: 'tool_use',
+    const event = {
+      type: 'tool_use' as const,
       timestamp: Date.now(),
-    }, { agentId: 'worker', event: {}, state: {} });
+      agentId: 'worker',
+      tool: 'Read',
+    };
+    checker.check(event, { agentId: 'worker', event, state: {} });
 
     expect(checker['lastActivity']).toBeGreaterThan(oldTime);
   });

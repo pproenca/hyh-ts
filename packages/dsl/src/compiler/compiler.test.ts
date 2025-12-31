@@ -4,7 +4,7 @@ import * as os from 'node:os';
 import * as path from 'node:path';
 import { describe, it, expect } from 'vitest';
 import { compile, compileToDir } from './index.js';
-import { workflow, agent, queue, inv, correct } from '../index.js';
+import { workflow, agent } from '../index.js';
 
 describe('DSL Compiler', () => {
   it('compiles workflow to JSON structure', () => {

@@ -1,5 +1,5 @@
 // packages/tui/src/tabs/Agents.test.tsx
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { render } from 'ink-testing-library';
 import React from 'react';
 import { Agents } from './Agents.js';

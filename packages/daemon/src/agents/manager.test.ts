@@ -1,7 +1,6 @@
 // packages/daemon/src/agents/manager.test.ts
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { AgentManager } from './manager.js';
-import { AgentProcess } from './process.js';
 import * as fs from 'node:fs/promises';
 import * as os from 'node:os';
 import * as path from 'node:path';

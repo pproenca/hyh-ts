@@ -28,7 +28,9 @@ describe('IPCClient', () => {
     const response = await client.request({ command: 'ping' });
 
     expect(response.status).toBe('ok');
-    expect(response.data).toEqual({ running: true, pid: process.pid });
+    if (response.status === 'ok') {
+      expect(response.data).toEqual({ running: true, pid: process.pid });
+    }
 
     await client.disconnect();
   });

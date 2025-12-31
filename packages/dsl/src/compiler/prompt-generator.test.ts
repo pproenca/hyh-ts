@@ -1,7 +1,7 @@
 // packages/dsl/src/compiler/prompt-generator.test.ts
 import { describe, it, expect } from 'vitest';
 import { generateAgentPrompt } from './prompt-generator.js';
-import { agent, inv, correct } from '../index.js';
+import { agent, inv } from '../index.js';
 
 describe('generateAgentPrompt', () => {
   it('generates markdown prompt for agent', () => {

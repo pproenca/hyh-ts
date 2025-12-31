@@ -15,7 +15,7 @@ import { PhaseManager } from '../workflow/phase-manager.js';
 import { HeartbeatMonitor, type HeartbeatStatus } from '../agents/heartbeat.js';
 import { GateExecutor, type GateResult } from '../workflow/gate-executor.js';
 import { ArtifactManager, type Artifact } from '../managers/artifact.js';
-import type { CompiledWorkflow, CompiledPhase, CompiledQueue } from '@hyh/dsl';
+import type { CompiledWorkflow } from '@hyh/dsl';
 
 interface DaemonOptions {
   worktreeRoot: string;

@@ -73,7 +73,7 @@ describe('ReinjectionManager', () => {
   it('provides getCount method', () => {
     const options: ReinjectionOptions = {
       every: 5,
-      template: (ctx: ReinjectionContext) => `Reminder`,
+      template: (_ctx: ReinjectionContext) => `Reminder`,
     };
     const manager = new ReinjectionManager(options);
 
@@ -89,7 +89,7 @@ describe('ReinjectionManager', () => {
   it('provides reset method', () => {
     const options: ReinjectionOptions = {
       every: 5,
-      template: (ctx: ReinjectionContext) => `Reminder`,
+      template: (_ctx: ReinjectionContext) => `Reminder`,
     };
     const manager = new ReinjectionManager(options);
 

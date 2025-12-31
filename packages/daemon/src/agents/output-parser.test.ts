@@ -41,6 +41,6 @@ describe('ClaudeOutputParser', () => {
     parser.end();
 
     expect(events).toHaveLength(1);
-    expect(events[0].type).toBe('tool_use');
+    expect(events[0]?.type).toBe('tool_use');
   });
 });

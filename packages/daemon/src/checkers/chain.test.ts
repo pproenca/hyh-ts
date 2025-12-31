@@ -1,7 +1,7 @@
 // packages/daemon/src/checkers/chain.test.ts
 import { describe, it, expect } from 'vitest';
 import { CheckerChain } from './chain.js';
-import { Checker, Violation } from './types.js';
+import type { Checker } from './types.js';
 import type { CompiledWorkflow } from '@hyh/dsl';
 
 describe('CheckerChain', () => {

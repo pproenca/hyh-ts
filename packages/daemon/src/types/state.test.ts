@@ -1,6 +1,6 @@
 // packages/daemon/src/types/state.test.ts
 import { describe, it, expect } from 'vitest';
-import { TaskStateSchema, WorkflowStateSchema, TaskStatus } from './state.js';
+import { TaskStateSchema, WorkflowStateSchema } from './state.js';
 
 describe('TaskState', () => {
   it('validates valid task state', () => {

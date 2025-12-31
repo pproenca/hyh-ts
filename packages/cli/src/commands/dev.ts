@@ -10,7 +10,7 @@ export function registerDevCommand(program: Command): void {
     .argument('[workflow]', 'Path to workflow.ts', 'workflow.ts')
     .option('--no-tui', 'Disable TUI, use log output')
     .option('--port <port>', 'Socket port for TUI connection')
-    .action(async (workflowPath: string, options: { tui: boolean; port?: string }) => {
+    .action(async (workflowPath: string, _options: { tui: boolean; port?: string }) => {
       const absolutePath = path.resolve(workflowPath);
 
       if (!fs.existsSync(absolutePath)) {

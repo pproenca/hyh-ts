@@ -1,6 +1,6 @@
 // packages/dsl/src/types/compiled.ts
 import { z } from 'zod';
-import { Model, TaskStatus, GlobPattern, ToolSpec } from './primitives.js';
+import type { Model, ToolSpec } from './primitives.js';
 
 // Correction types
 export const CorrectionTypeSchema = z.enum([

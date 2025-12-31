@@ -25,9 +25,10 @@ describe('ContextBudgetChecker', () => {
       data: 'x'.repeat(340),
     });
 
+    const event = { type: 'message' as const, timestamp: Date.now(), agentId: 'worker', content: 'test' };
     const ctx: CheckContext = {
       agentId: 'worker',
-      event: { type: 'message', timestamp: Date.now() },
+      event,
       trajectory,
       state: {} as unknown,
     };
@@ -54,9 +55,10 @@ describe('ContextBudgetChecker', () => {
       data: 'x'.repeat(180),
     });
 
+    const event = { type: 'message' as const, timestamp: Date.now(), agentId: 'worker', content: 'test' };
     const ctx: CheckContext = {
       agentId: 'worker',
-      event: { type: 'message', timestamp: Date.now() },
+      event,
       trajectory,
       state: {} as unknown,
     };
@@ -81,9 +83,10 @@ describe('ContextBudgetChecker', () => {
       data: 'x'.repeat(200),
     });
 
+    const event = { type: 'message' as const, timestamp: Date.now(), agentId: 'worker', content: 'test' };
     const ctx: CheckContext = {
       agentId: 'worker',
-      event: { type: 'message', timestamp: Date.now() },
+      event,
       trajectory,
       state: {} as unknown,
     };

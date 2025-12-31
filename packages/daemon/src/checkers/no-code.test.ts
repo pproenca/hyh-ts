@@ -5,23 +5,27 @@ import { NoCodeChecker } from './no-code.js';
 describe('NoCodeChecker', () => {
   it('allows Read operations', () => {
     const checker = new NoCodeChecker('orchestrator');
-    const violation = checker.check({
-      type: 'tool_use',
+    const event = {
+      type: 'tool_use' as const,
       tool: 'Read',
       timestamp: Date.now(),
-    }, { agentId: 'orchestrator', event: {} as any, state: {} });
+      agentId: 'orchestrator',
+    };
+    const violation = checker.check(event, { agentId: 'orchestrator', event, state: {} });
 
     expect(violation).toBeNull();
   });
 
   it('blocks Write to code files', () => {
     const checker = new NoCodeChecker('orchestrator');
-    const violation = checker.check({
-      type: 'tool_use',
+    const event = {
+      type: 'tool_use' as const,
       tool: 'Write',
       path: 'src/foo.ts',
       timestamp: Date.now(),
-    }, { agentId: 'orchestrator', event: {} as any, state: {} });
+      agentId: 'orchestrator',
+    };
+    const violation = checker.check(event, { agentId: 'orchestrator', event, state: {} });
 
     expect(violation).not.toBeNull();
     expect(violation?.type).toBe('noCode');
@@ -29,12 +33,14 @@ describe('NoCodeChecker', () => {
 
   it('allows Write to markdown files', () => {
     const checker = new NoCodeChecker('orchestrator');
-    const violation = checker.check({
-      type: 'tool_use',
+    const event = {
+      type: 'tool_use' as const,
       tool: 'Write',
       path: 'docs/plan.md',
       timestamp: Date.now(),
-    }, { agentId: 'orchestrator', event: {} as any, state: {} });
+      agentId: 'orchestrator',
+    };
+    const violation = checker.check(event, { agentId: 'orchestrator', event, state: {} });
 
     expect(violation).toBeNull();
   });

@@ -21,7 +21,7 @@ export function App({ socketPath }: AppProps) {
   const [activeTab, setActiveTab] = useState(0);
   const { connected, state, error } = useDaemon(socketPath);
 
-  useInput((input, key) => {
+  useInput((input, _key) => {
     if (input >= '1' && input <= '5') {
       setActiveTab(parseInt(input) - 1);
     }

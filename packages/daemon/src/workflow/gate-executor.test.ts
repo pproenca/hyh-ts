@@ -1,5 +1,5 @@
 // packages/daemon/src/workflow/gate-executor.test.ts
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { GateExecutor } from './gate-executor.js';
 
 describe('GateExecutor', () => {

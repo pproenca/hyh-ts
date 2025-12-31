@@ -1,6 +1,6 @@
 // packages/daemon/src/core/workflow-coordinator.ts
 import * as fs from 'node:fs/promises';
-import type { CompiledWorkflow, CompiledGate } from '@hyh/dsl';
+import type { CompiledWorkflow } from '@hyh/dsl';
 import type { StateManager } from '../state/manager.js';
 import type { TrajectoryLogger, TrajectoryEvent } from '../trajectory/logger.js';
 import { PhaseManager } from '../workflow/phase-manager.js';

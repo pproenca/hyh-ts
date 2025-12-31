@@ -229,15 +229,15 @@ export class Daemon {
         // Kill agent process - to be implemented with AgentManager integration
         this.agents.delete(id);
       },
-      respawnAgent: async (id: string) => {
+      respawnAgent: async (_id: string) => {
         // Respawn agent - to be implemented with AgentManager integration
         // For now, this is a placeholder that will be wired up later
       },
-      reassignTask: async (id: string) => {
+      reassignTask: async (_id: string) => {
         // Reassign task from agent - to be implemented with StateManager integration
         // For now, this is a placeholder that will be wired up later
       },
-      compactContext: async (id: string, options) => {
+      compactContext: async (_id: string, _options) => {
         // Compact agent context - to be implemented with context management
         // For now, this is a placeholder that will be wired up later
       },

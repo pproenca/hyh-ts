@@ -2,6 +2,8 @@
 import { Command } from 'commander';
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
+import { IPCClient } from '../ipc/client.js';
+import { findSocketPath } from '../utils/socket.js';
 
 export function registerResumeCommand(program: Command): void {
   program
@@ -9,28 +11,72 @@ export function registerResumeCommand(program: Command): void {
     .description('Resume a workflow from saved state')
     .option('-d, --dir <dir>', 'Project directory', '.')
     .action(async (options: { dir: string }) => {
-      const projectDir = path.resolve(options.dir);
-      const stateFile = path.join(projectDir, '.hyh', 'state.json');
+      const projectDir = options.dir ? path.resolve(options.dir) : process.cwd();
+      const hyhDir = path.join(projectDir, '.hyh');
+      const statePath = path.join(hyhDir, 'state.json');
+      const workflowPath = path.join(hyhDir, 'workflow.json');
 
+      // Check for existing state
       try {
-        await fs.access(stateFile);
+        await fs.access(statePath);
       } catch {
-        console.error('No saved state found');
-        console.error(`Looking for: ${stateFile}`);
+        console.error('No workflow state found. Start a workflow first with `hyh run`.');
         process.exit(1);
       }
 
-      console.log('Resuming workflow from saved state...');
-      console.log(`State file: ${stateFile}`);
+      // Check for existing workflow
+      try {
+        await fs.access(workflowPath);
+      } catch {
+        console.error('No compiled workflow found. Run `hyh compile` first.');
+        process.exit(1);
+      }
 
-      // Load and validate state
-      const stateContent = await fs.readFile(stateFile, 'utf-8');
-      const state = JSON.parse(stateContent);
+      // Check for running daemon
+      const socketPath = await findSocketPath();
+      if (socketPath) {
+        console.log('Connecting to running daemon...');
+        const client = new IPCClient(socketPath);
+        try {
+          await client.connect();
+          const response = await client.request({ command: 'get_state' });
+          if (response.status === 'ok') {
+            const data = response.data as { state: { currentPhase: string; workflowName: string } };
+            console.log(`Connected to workflow: ${data.state.workflowName}`);
+            console.log(`Current phase: ${data.state.currentPhase}`);
+          }
+          await client.disconnect();
+          return;
+        } catch {
+          console.log('Daemon not responding, starting new instance...');
+        }
+      }
 
-      console.log(`Workflow: ${state.workflowName || 'Unknown'}`);
-      console.log(`Phase: ${state.currentPhase || 'Unknown'}`);
+      // Start daemon with existing state
+      console.log('Resuming workflow...');
+      try {
+        const { Daemon, EventLoop } = await import('@hyh/daemon');
+        const daemon = new Daemon({ worktreeRoot: projectDir });
+        await daemon.start();
+        await daemon.loadWorkflow(workflowPath);
 
-      // TODO: Start daemon with resumeFrom option
-      console.log('Resume not fully implemented yet');
+        // State is automatically loaded by StateManager
+        const eventLoop = new EventLoop(daemon, { tickInterval: 1000 });
+        eventLoop.start();
+
+        console.log('Workflow resumed successfully');
+        console.log(`Socket: ${daemon.getSocketPath()}`);
+
+        process.on('SIGINT', async () => {
+          eventLoop.stop();
+          await daemon.stop();
+          process.exit(0);
+        });
+
+        await new Promise(() => {});
+      } catch (error) {
+        console.error('Failed to resume:', error instanceof Error ? error.message : error);
+        process.exit(1);
+      }
     });
 }

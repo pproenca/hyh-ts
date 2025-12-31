@@ -49,6 +49,11 @@ export const PlanResetRequestSchema = z.object({
   command: z.literal('plan_reset'),
 });
 
+export const HeartbeatRequestSchema = z.object({
+  command: z.literal('heartbeat'),
+  workerId: z.string().min(1),
+});
+
 // Union of all request types
 export const IPCRequestSchema = z.discriminatedUnion('command', [
   GetStateRequestSchema,
@@ -60,6 +65,7 @@ export const IPCRequestSchema = z.discriminatedUnion('command', [
   ExecRequestSchema,
   PlanImportRequestSchema,
   PlanResetRequestSchema,
+  HeartbeatRequestSchema,
 ]);
 
 export type IPCRequest = z.infer<typeof IPCRequestSchema>;

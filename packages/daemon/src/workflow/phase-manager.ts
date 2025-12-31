@@ -44,6 +44,6 @@ export class PhaseManager {
   getNextPhase(current: string): string | null {
     const idx = this.phaseOrder.indexOf(current);
     if (idx === -1 || idx >= this.phaseOrder.length - 1) return null;
-    return this.phaseOrder[idx + 1];
+    return this.phaseOrder[idx + 1] ?? null;
   }
 }

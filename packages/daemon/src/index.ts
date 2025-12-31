@@ -22,6 +22,9 @@ export type { Checker, Violation, CheckContext } from './checkers/types.js';
 export type { TddCheckerOptions } from './checkers/tdd.js';
 export type { FileScopeCheckerOptions } from './checkers/file-scope.js';
 
+// Workflow
+export { PhaseManager } from './workflow/phase-manager.js';
+
 // Types - State
 export type {
   WorkflowState,

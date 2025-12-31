@@ -25,6 +25,7 @@ export class PhaseBuilder {
   private _gate?: string;
   private _then?: string;
   private _checkpoint?: Checkpoint;
+  private _contextBudget?: number;
 
   constructor(name: string, workflow: WorkflowBuilderLike) {
     this._name = name;
@@ -87,6 +88,11 @@ export class PhaseBuilder {
     return this;
   }
 
+  contextBudget(tokens: number): this {
+    this._contextBudget = tokens;
+    return this;
+  }
+
   // Allow chaining back to workflow
   phase(name: string): PhaseBuilder {
     return this._workflow.phase(name);
@@ -122,6 +128,9 @@ export class PhaseBuilder {
     }
     if (this._checkpoint) {
       result.checkpoint = this._checkpoint;
+    }
+    if (this._contextBudget !== undefined) {
+      result.contextBudget = this._contextBudget;
     }
     return result;
   }

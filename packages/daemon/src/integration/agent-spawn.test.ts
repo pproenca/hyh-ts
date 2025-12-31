@@ -41,11 +41,36 @@ describe('Agent spawning integration', () => {
 
     // Add a pending task
     await daemon.stateManager.update(s => {
-      s.tasks = { 'task-1': { id: 'task-1', status: 'pending', claimedBy: null } };
+      s.tasks = {
+        'task-1': {
+          id: 'task-1',
+          description: 'Test task',
+          status: 'pending',
+          claimedBy: null,
+          claimedAt: null,
+          startedAt: null,
+          completedAt: null,
+          attempts: 0,
+          lastError: null,
+          dependencies: [],
+          files: [],
+          timeoutSeconds: 600,
+        }
+      };
     });
 
     // Check spawn triggers
     const spawns = await daemon.checkSpawnTriggers();
     expect(spawns.length).toBeGreaterThan(0);
+  });
+
+  it('should have an AgentManager instance', () => {
+    // Verify daemon has AgentManager integration
+    expect(daemon.getAgentManager()).toBeInstanceOf(AgentManager);
+  });
+
+  it('should expose spawnAgents method', () => {
+    // Verify daemon has spawnAgents method
+    expect(typeof daemon.spawnAgents).toBe('function');
   });
 });

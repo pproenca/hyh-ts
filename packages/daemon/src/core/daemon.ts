@@ -11,6 +11,7 @@ import { CheckerChain } from '../checkers/chain.js';
 import { CorrectionApplicator, type Correction } from '../corrections/applicator.js';
 import type { Violation, TrajectoryEvent } from '../checkers/types.js';
 import { SpawnTriggerManager, type SpawnSpec } from '../workflow/spawn-trigger.js';
+import { AgentManager } from '../agents/manager.js';
 import { PhaseManager } from '../workflow/phase-manager.js';
 import { HeartbeatMonitor, type HeartbeatStatus } from '../agents/heartbeat.js';
 import { GateExecutor, type GateResult } from '../workflow/gate-executor.js';
@@ -56,6 +57,7 @@ export class Daemon {
   private phaseManager: PhaseManager | null = null;
   private readonly heartbeatMonitor: HeartbeatMonitor = new HeartbeatMonitor();
   private gateExecutor: GateExecutor | null = null;
+  private readonly agentManager: AgentManager;
 
   constructor(options: DaemonOptions) {
     this.worktreeRoot = options.worktreeRoot;
@@ -72,6 +74,7 @@ export class Daemon {
     this.artifactManager = new ArtifactManager(
       path.join(this.worktreeRoot, '.hyh', 'artifacts')
     );
+    this.agentManager = new AgentManager(this.worktreeRoot);
 
     // Register handlers
     this.registerHandlers();
@@ -89,6 +92,43 @@ export class Daemon {
 
   getSocketPath(): string {
     return this.socketPath;
+  }
+
+  getAgentManager(): AgentManager {
+    return this.agentManager;
+  }
+
+  async spawnAgents(specs: SpawnSpec[]): Promise<void> {
+    for (const spec of specs) {
+      // Get agent config from workflow
+      const agentConfig = this.workflow?.agents?.[spec.agentType];
+      if (!agentConfig) {
+        continue;
+      }
+
+      // Convert ToolSpec[] to string[] (extract tool name from ToolSpec)
+      const toolNames = (agentConfig.tools || []).map((tool) =>
+        typeof tool === 'string' ? tool : tool.tool
+      );
+
+      // Build full spawn spec with agent configuration
+      const fullSpec = {
+        agentType: spec.agentType,
+        taskId: spec.taskId,
+        model: (agentConfig.model || 'sonnet') as 'haiku' | 'sonnet' | 'opus',
+        tools: toolNames,
+        systemPromptPath: agentConfig.systemPrompt || '',
+      };
+
+      const process = await this.agentManager.spawn(fullSpec);
+
+      // Log spawn
+      await this.trajectory.log({
+        type: 'spawn',
+        timestamp: Date.now(),
+        agentId: process.agentId,
+      });
+    }
   }
 
   loadCheckerChain(checkerChain: CheckerChain): void {

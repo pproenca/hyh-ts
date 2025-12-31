@@ -6,6 +6,7 @@ import { registerRunCommand } from './commands/run.js';
 import { registerStatusCommand } from './commands/status.js';
 import { registerTaskCommand } from './commands/task.js';
 import { registerVerifyCompleteCommand } from './commands/verify-complete.js';
+import { registerDevCommand } from './commands/dev.js';
 
 const program = new Command();
 
@@ -28,5 +29,6 @@ registerRunCommand(program);
 registerStatusCommand(program);
 registerTaskCommand(program);
 registerVerifyCompleteCommand(program);
+registerDevCommand(program);
 
 program.parse();

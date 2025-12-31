@@ -1,45 +1,71 @@
 // packages/dsl/src/types/primitives.ts
-// Primitive types used across the DSL
-
 import { z } from 'zod';
 
-// Duration type for time intervals (e.g., "30s", "5m", "1h")
-export const DurationSchema = z.string().regex(/^\d+[smhd]$/, {
-  message: 'Duration must be a number followed by s, m, h, or d (e.g., "30s", "5m")',
-});
-export type Duration = z.infer<typeof DurationSchema>;
+// Duration: string like '10m', '30s', '2h' or milliseconds as number
+type DurationUnit = 's' | 'm' | 'h' | 'd';
+export type Duration = `${number}${DurationUnit}` | number;
 
-// Model type for LLM model identifiers
-export const ModelSchema = z.enum([
-  'claude-sonnet-4-20250514',
-  'claude-opus-4-20250514',
-  'o3',
-  'gpt-4.1',
-]);
+const UNIT_MS: Record<DurationUnit, number> = {
+  s: 1000,
+  m: 60 * 1000,
+  h: 60 * 60 * 1000,
+  d: 24 * 60 * 60 * 1000,
+};
+
+export function parseDuration(duration: Duration): number {
+  if (typeof duration === 'number') {
+    return duration;
+  }
+
+  const match = duration.match(/^(\d+)(s|m|h|d)$/);
+  if (!match) {
+    throw new Error(`Invalid duration: ${duration}`);
+  }
+
+  const [, value, unit] = match;
+  return parseInt(value!, 10) * UNIT_MS[unit as DurationUnit];
+}
+
+// Glob pattern for file matching
+export type GlobPattern = string;
+
+// Claude model types
+export const ModelSchema = z.enum(['haiku', 'sonnet', 'opus']);
 export type Model = z.infer<typeof ModelSchema>;
 
-// Task status type
+// Task status
 export const TaskStatusSchema = z.enum([
   'pending',
   'claimed',
-  'in_progress',
-  'blocked',
-  'completed',
+  'running',
+  'verifying',
+  'complete',
   'failed',
 ]);
 export type TaskStatus = z.infer<typeof TaskStatusSchema>;
 
-// Glob pattern for file matching
-export const GlobPatternSchema = z.string();
-export type GlobPattern = z.infer<typeof GlobPatternSchema>;
+// Tool specification with optional constraints
+export type ToolSpec = string | { tool: string; pattern?: string };
 
-// Tool specification
-export const ToolSpecSchema = z.union([
-  z.string(),
-  z.object({
-    name: z.string(),
-    allow: z.array(GlobPatternSchema).optional(),
-    deny: z.array(GlobPatternSchema).optional(),
-  }),
+export interface ParsedToolSpec {
+  tool: string;
+  pattern?: string;
+}
+
+export function parseToolSpec(spec: ToolSpec): ParsedToolSpec {
+  if (typeof spec === 'string') {
+    const match = spec.match(/^(\w+)(?:\(([^)]+)\))?$/);
+    if (!match) {
+      throw new Error(`Invalid tool spec: ${spec}`);
+    }
+    const [, tool, pattern] = match;
+    return { tool: tool!, pattern: pattern || undefined };
+  }
+  return spec;
+}
+
+// Duration schema for Zod validation
+export const DurationSchema = z.union([
+  z.number().positive(),
+  z.string().regex(/^\d+(s|m|h|d)$/),
 ]);
-export type ToolSpec = z.infer<typeof ToolSpecSchema>;

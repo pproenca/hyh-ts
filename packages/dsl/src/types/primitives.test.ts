@@ -1,6 +1,6 @@
 // packages/dsl/src/types/primitives.test.ts
 import { describe, it, expect } from 'vitest';
-import { parseDuration, Duration } from './primitives.js';
+import { parseDuration, Duration, parseToolSpec } from './primitives.js';
 
 describe('parseDuration', () => {
   it('parses seconds', () => {
@@ -21,5 +21,22 @@ describe('parseDuration', () => {
 
   it('throws on invalid format', () => {
     expect(() => parseDuration('10x' as Duration)).toThrow('Invalid duration');
+  });
+});
+
+describe('parseToolSpec', () => {
+  it('parses simple tool name', () => {
+    expect(parseToolSpec('Read')).toEqual({ tool: 'Read', pattern: undefined });
+  });
+
+  it('parses tool with pattern', () => {
+    expect(parseToolSpec('Bash(npm:*)')).toEqual({ tool: 'Bash', pattern: 'npm:*' });
+  });
+
+  it('parses object spec', () => {
+    expect(parseToolSpec({ tool: 'Write', pattern: 'src/**' })).toEqual({
+      tool: 'Write',
+      pattern: 'src/**',
+    });
   });
 });

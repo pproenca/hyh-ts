@@ -98,6 +98,19 @@ export class Daemon {
     return this.agentManager;
   }
 
+  getActiveAgents(): { agentId: string; pollEvents: () => TrajectoryEvent[] }[] {
+    const agents = this.agentManager.getActiveAgents();
+    return agents.map(agent => ({
+      agentId: agent.agentId,
+      pollEvents: () => {
+        // Poll events from the agent's event emitter
+        const events: TrajectoryEvent[] = [];
+        // For now return empty - actual implementation would buffer events
+        return events;
+      },
+    }));
+  }
+
   async spawnAgents(specs: SpawnSpec[]): Promise<void> {
     for (const spec of specs) {
       // Get agent config from workflow

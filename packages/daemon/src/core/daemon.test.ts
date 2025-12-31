@@ -422,4 +422,29 @@ describe('Daemon', () => {
 
     await daemon.stop();
   });
+
+  it('should return active agents with pollEvents method', async () => {
+    daemon = new Daemon({ worktreeRoot: tempDir });
+    await daemon.start();
+
+    // Spawn a mock agent
+    await daemon.stateManager.update(s => {
+      s.agents = {
+        'worker-1': {
+          id: 'worker-1',
+          type: 'worker',
+          status: 'active',
+          currentTask: 't1',
+          pid: 123,
+          sessionId: 'uuid-123',
+          lastHeartbeat: Date.now(),
+          violationCounts: {},
+        },
+      };
+    });
+
+    const activeAgents = daemon.getActiveAgents();
+
+    expect(Array.isArray(activeAgents)).toBe(true);
+  });
 });

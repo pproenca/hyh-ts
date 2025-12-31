@@ -7,6 +7,7 @@ describe('PhaseBuilder', () => {
   const mockWorkflow = {
     addPhase: () => {},
     phase: () => new PhaseBuilder('test', {} as any),
+    registerAgent: () => {},
     build: () => ({} as any),
   };
 

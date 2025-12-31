@@ -7,6 +7,7 @@ import { GateBuilder } from './gate.js';
 // Forward reference type for WorkflowBuilder
 interface WorkflowBuilderLike {
   phase(name: string): PhaseBuilder;
+  registerAgent(agent: AgentBuilder): void;
   build(): unknown;
 }
 
@@ -32,6 +33,7 @@ export class PhaseBuilder {
 
   agent(agent: AgentBuilder): this {
     this._agent = agent.build().name;
+    this._workflow.registerAgent(agent);
     return this;
   }
 

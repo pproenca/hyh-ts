@@ -7,6 +7,15 @@ interface HeartbeatConfig {
   corrections: Array<{ count: number; correction: Correction }>;
 }
 
+interface PostToolUseConfig {
+  matcher: string;
+  commands: string[];
+}
+
+interface SubagentStopConfig {
+  verify: string[];
+}
+
 export class AgentBuilder {
   private _name: string;
   private _model: Model = 'sonnet';
@@ -17,6 +26,8 @@ export class AgentBuilder {
   private _violations: Record<string, Correction[]> = {};
   private _heartbeat?: HeartbeatConfig;
   private _isReadOnly: boolean = false;
+  private _postToolUse?: PostToolUseConfig;
+  private _subagentStop?: SubagentStopConfig;
 
   constructor(name: string) {
     this._name = name;
@@ -64,6 +75,16 @@ export class AgentBuilder {
     return this;
   }
 
+  postToolUse(matcher: string, commands: string[]): this {
+    this._postToolUse = { matcher, commands };
+    return this;
+  }
+
+  subagentStop(verify: string[]): this {
+    this._subagentStop = { verify };
+    return this;
+  }
+
   onViolation(type: string, correction: Correction): this;
   onViolation(type: string, options: { after: number }, correction: Correction): this;
   onViolation(
@@ -94,6 +115,12 @@ export class AgentBuilder {
     };
     if (this._heartbeat) {
       result.heartbeat = this._heartbeat;
+    }
+    if (this._postToolUse) {
+      result.postToolUse = this._postToolUse;
+    }
+    if (this._subagentStop) {
+      result.subagentStop = this._subagentStop;
     }
     return result;
   }

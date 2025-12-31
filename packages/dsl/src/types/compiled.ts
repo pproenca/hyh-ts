@@ -55,6 +55,13 @@ export interface CompiledAgent {
     corrections: Array<{ count: number; correction: Correction }>;
   };
   systemPrompt?: string;
+  postToolUse?: {
+    matcher: string;
+    commands: string[];
+  };
+  subagentStop?: {
+    verify: string[];
+  };
 }
 
 // Compiled phase

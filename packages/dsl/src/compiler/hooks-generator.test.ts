@@ -17,4 +17,74 @@ describe('generateHooksJson', () => {
     expect(hooks.hooks.SessionStart).toBeDefined();
     expect(hooks.hooks.Stop).toBeDefined();
   });
+
+  it('generates PostToolUse hooks from agent config', () => {
+    const coder = agent('coder')
+      .model('sonnet')
+      .role('implementer')
+      .postToolUse('Edit|Write', ['hyh lint --fix']);
+
+    const orch = agent('orchestrator').model('opus').role('coordinator');
+    const wf = workflow('test')
+      .orchestrator(orch)
+      .phase('code').agent(coder)
+      .build();
+
+    const hooks = generateHooksJson(wf);
+
+    expect(hooks.hooks.PostToolUse).toBeDefined();
+    expect(hooks.hooks.PostToolUse).toHaveLength(1);
+    expect(hooks.hooks.PostToolUse![0].matcher).toBe('Edit|Write');
+    expect(hooks.hooks.PostToolUse![0].hooks).toEqual([
+      { type: 'command', command: 'hyh lint --fix' },
+    ]);
+  });
+
+  it('generates SubagentStop hooks from agent config', () => {
+    const reviewer = agent('reviewer')
+      .model('sonnet')
+      .role('reviewer')
+      .subagentStop(['hyh verify-review']);
+
+    const orch = agent('orchestrator').model('opus').role('coordinator');
+    const wf = workflow('test')
+      .orchestrator(orch)
+      .phase('review').agent(reviewer)
+      .build();
+
+    const hooks = generateHooksJson(wf);
+
+    expect(hooks.hooks.SubagentStop).toBeDefined();
+    expect(hooks.hooks.SubagentStop).toHaveLength(1);
+    expect(hooks.hooks.SubagentStop![0].matcher).toBe('');
+    expect(hooks.hooks.SubagentStop![0].hooks).toEqual([
+      { type: 'command', command: 'hyh verify-review' },
+    ]);
+  });
+
+  it('aggregates PostToolUse hooks from multiple agents', () => {
+    const coder = agent('coder')
+      .model('sonnet')
+      .role('implementer')
+      .postToolUse('Edit|Write', ['hyh lint --fix']);
+
+    const tester = agent('tester')
+      .model('sonnet')
+      .role('tester')
+      .postToolUse('Bash', ['hyh check-tests']);
+
+    const orch = agent('orchestrator').model('opus').role('coordinator');
+    const wf = workflow('test')
+      .orchestrator(orch)
+      .phase('code').agent(coder)
+      .phase('test').agent(tester)
+      .build();
+
+    const hooks = generateHooksJson(wf);
+
+    expect(hooks.hooks.PostToolUse).toBeDefined();
+    expect(hooks.hooks.PostToolUse).toHaveLength(2);
+    expect(hooks.hooks.PostToolUse![0].matcher).toBe('Edit|Write');
+    expect(hooks.hooks.PostToolUse![1].matcher).toBe('Bash');
+  });
 });

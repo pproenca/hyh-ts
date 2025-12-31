@@ -20,11 +20,6 @@
   "dependencies": {
     "@hyh/dsl": "workspace:*",
     "zod": "^3.24.0",
-    "async-mutex": "^0.5.0",
-    "proper-lockfile": "^4.1.0",
-    "pino": "^9.6.0"
-  },
-  "devDependencies": {
-    "@types/proper-lockfile": "^4.1.0"
+    "async-mutex": "^0.5.0"
   }
 }

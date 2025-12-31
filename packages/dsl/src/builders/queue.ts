@@ -26,11 +26,6 @@ export class QueueBuilder {
     return this;
   }
 
-  done(predicate: (task: Task) => boolean): this {
-    // Store done predicate if needed
-    return this;
-  }
-
   build(): CompiledQueue {
     return {
       name: this._name,

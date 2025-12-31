@@ -33,13 +33,13 @@ export type GlobPattern = string;
 export const ModelSchema = z.enum(['haiku', 'sonnet', 'opus']);
 export type Model = z.infer<typeof ModelSchema>;
 
-// Task status
+// Task status - matches daemon TaskStatus values
 export const TaskStatusSchema = z.enum([
   'pending',
   'claimed',
   'running',
   'verifying',
-  'complete',
+  'completed',
   'failed',
 ]);
 export type TaskStatus = z.infer<typeof TaskStatusSchema>;

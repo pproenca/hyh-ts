@@ -5,6 +5,7 @@
   },
   "references": [
     { "path": "packages/dsl" },
-    { "path": "packages/daemon" }
+    { "path": "packages/daemon" },
+    { "path": "packages/cli" }
   ]
 }

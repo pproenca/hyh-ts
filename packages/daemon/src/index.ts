@@ -23,6 +23,7 @@ export { AgentManager } from './agents/manager.js';
 export { AgentProcess } from './agents/process.js';
 export { HeartbeatMonitor } from './agents/heartbeat.js';
 export { ClaudeOutputParser } from './agents/output-parser.js';
+export { checkClaudeCli, type ClaudeCliInfo } from './agents/claude-cli.js';
 export type { AgentProcessConfig, AgentEvent } from './agents/process.js';
 export type { SpawnSpec } from './agents/manager.js';
 export type { HeartbeatStatus } from './agents/heartbeat.js';

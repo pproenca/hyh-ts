@@ -1,6 +1,18 @@
 // packages/daemon/src/agents/claude-cli.test.ts
-import { describe, it, expect, beforeAll } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { execSync } from 'node:child_process';
+
+// Check for Claude CLI availability at module load time (before test collection)
+function isClaudeAvailable(): boolean {
+  try {
+    execSync('claude --version', { encoding: 'utf-8', stdio: 'pipe' });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+const claudeAvailable = isClaudeAvailable();
 
 describe('checkClaudeCli function', () => {
   it('should export checkClaudeCli function', async () => {
@@ -10,17 +22,6 @@ describe('checkClaudeCli function', () => {
 });
 
 describe('Claude CLI integration', () => {
-  let claudeAvailable = false;
-
-  beforeAll(() => {
-    try {
-      execSync('claude --version', { encoding: 'utf-8' });
-      claudeAvailable = true;
-    } catch {
-      claudeAvailable = false;
-    }
-  });
-
   it.skipIf(!claudeAvailable)('should have claude CLI available', () => {
     const version = execSync('claude --version', { encoding: 'utf-8' });
     expect(version).toMatch(/\d+\.\d+/);

@@ -41,3 +41,39 @@ describe('WorkflowBuilder', () => {
     expect(w.phases[1]!.name).toBe('plan');
   });
 });
+
+describe('WorkflowBuilder.scaling', () => {
+  it('should set scaling config', () => {
+    const orch = agent('orch').model('sonnet').role('orchestrator');
+    const result = workflow('test')
+      .orchestrator(orch)
+      .scaling({
+        trivial: { maxHours: 1, agents: 1 },
+        small: { maxHours: 4, agents: 2 },
+      })
+      .phase('p1').agent(orch)
+      .build();
+
+    expect(result.scaling?.trivial?.maxHours).toBe(1);
+    expect(result.scaling?.small?.agents).toBe(2);
+  });
+});
+
+describe('WorkflowBuilder.preCompact', () => {
+  it('should set preCompact config', () => {
+    const orch = agent('orch').model('sonnet').role('orchestrator');
+    const result = workflow('test')
+      .orchestrator(orch)
+      .preCompact({
+        preserve: ['decisions', 'errors'],
+        summarize: ['exploration'],
+        discard: ['verbose_logs'],
+      })
+      .phase('p1').agent(orch)
+      .build();
+
+    expect(result.preCompact?.preserve).toContain('decisions');
+    expect(result.preCompact?.summarize).toContain('exploration');
+    expect(result.preCompact?.discard).toContain('verbose_logs');
+  });
+});

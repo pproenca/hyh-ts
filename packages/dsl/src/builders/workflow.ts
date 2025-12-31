@@ -1,5 +1,5 @@
 // packages/dsl/src/builders/workflow.ts
-import { CompiledWorkflow, CompiledAgent, CompiledQueue, CompiledGate } from '../types/compiled.js';
+import { CompiledWorkflow, CompiledAgent, CompiledQueue, CompiledGate, ScalingConfig, PreCompactConfig } from '../types/compiled.js';
 import { AgentBuilder } from './agent.js';
 import { QueueBuilder } from './queue.js';
 import { GateBuilder } from './gate.js';
@@ -19,6 +19,8 @@ export class WorkflowBuilder {
   private _agents: Map<string, AgentBuilder> = new Map();
   private _queues: Map<string, QueueBuilder> = new Map();
   private _gates: Map<string, GateBuilder> = new Map();
+  private _scaling?: ScalingConfig;
+  private _preCompact?: PreCompactConfig;
 
   constructor(name: string) {
     this._name = name;
@@ -35,6 +37,16 @@ export class WorkflowBuilder {
   orchestrator(agent: AgentBuilder): this {
     this._orchestrator = agent;
     this._agents.set(agent.build().name, agent);
+    return this;
+  }
+
+  scaling(config: ScalingConfig): this {
+    this._scaling = config;
+    return this;
+  }
+
+  preCompact(config: PreCompactConfig): this {
+    this._preCompact = config;
     return this;
   }
 
@@ -88,7 +100,7 @@ export class WorkflowBuilder {
       gates[name] = builder.build();
     }
 
-    return {
+    const result: CompiledWorkflow = {
       name: this._name,
       resumable: this._resumable,
       orchestrator: this._orchestrator?.build().name ?? '',
@@ -97,6 +109,16 @@ export class WorkflowBuilder {
       queues,
       gates,
     };
+
+    if (this._scaling) {
+      result.scaling = this._scaling;
+    }
+
+    if (this._preCompact) {
+      result.preCompact = this._preCompact;
+    }
+
+    return result;
   }
 
   validate(): void {

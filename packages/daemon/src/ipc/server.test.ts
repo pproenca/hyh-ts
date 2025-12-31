@@ -258,3 +258,210 @@ describe('IPCServer request validation', () => {
     client.end();
   });
 });
+
+describe('IPCServer handler registration', () => {
+  let tempDir: string;
+  let socketPath: string;
+  let server: IPCServer;
+
+  beforeEach(async () => {
+    tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'hyh-ipc-'));
+    socketPath = path.join(tempDir, 'test.sock');
+    server = new IPCServer(socketPath);
+  });
+
+  afterEach(async () => {
+    if (server) {
+      await server.stop();
+    }
+    await fs.rm(tempDir, { recursive: true, force: true });
+  });
+
+  it('allows registering custom ping handler', async () => {
+    server.registerHandler('ping', async () => ({
+      pong: true,
+      timestamp: Date.now(),
+    }));
+    await server.start();
+
+    const client = net.createConnection(socketPath);
+    await new Promise<void>((resolve) => client.once('connect', resolve));
+
+    client.write(JSON.stringify({ command: 'ping' }) + '\n');
+
+    const response = await new Promise<string>((resolve) => {
+      client.once('data', (data) => resolve(data.toString()));
+    });
+
+    const parsed = JSON.parse(response.trim());
+    expect(parsed.status).toBe('ok');
+    expect(parsed.data.pong).toBe(true);
+
+    client.end();
+  });
+
+  it('allows registering get_state handler', async () => {
+    server.registerHandler('get_state', async () => ({
+      phase: 'implement',
+      tasks: { pending: 5, completed: 3 },
+    }));
+    await server.start();
+
+    const client = net.createConnection(socketPath);
+    await new Promise<void>((resolve) => client.once('connect', resolve));
+
+    client.write(JSON.stringify({ command: 'get_state' }) + '\n');
+
+    const response = await new Promise<string>((resolve) => {
+      client.once('data', (data) => resolve(data.toString()));
+    });
+
+    const parsed = JSON.parse(response.trim());
+    expect(parsed.status).toBe('ok');
+    expect(parsed.data.phase).toBe('implement');
+
+    client.end();
+  });
+
+  it('allows registering heartbeat handler with workerId', async () => {
+    let receivedWorkerId: string | undefined;
+    server.registerHandler('heartbeat', async (req: { workerId: string }) => {
+      receivedWorkerId = req.workerId;
+      return { acknowledged: true };
+    });
+    await server.start();
+
+    const client = net.createConnection(socketPath);
+    await new Promise<void>((resolve) => client.once('connect', resolve));
+
+    client.write(JSON.stringify({ command: 'heartbeat', workerId: 'worker-1' }) + '\n');
+
+    const response = await new Promise<string>((resolve) => {
+      client.once('data', (data) => resolve(data.toString()));
+    });
+
+    const parsed = JSON.parse(response.trim());
+    expect(parsed.status).toBe('ok');
+    expect(receivedWorkerId).toBe('worker-1');
+
+    client.end();
+  });
+
+  it('allows registering task_claim handler', async () => {
+    server.registerHandler('task_claim', async (req: { workerId: string }) => ({
+      taskId: 'task-1',
+      claimed: true,
+      workerId: req.workerId,
+    }));
+    await server.start();
+
+    const client = net.createConnection(socketPath);
+    await new Promise<void>((resolve) => client.once('connect', resolve));
+
+    client.write(JSON.stringify({ command: 'task_claim', workerId: 'worker-1' }) + '\n');
+
+    const response = await new Promise<string>((resolve) => {
+      client.once('data', (data) => resolve(data.toString()));
+    });
+
+    const parsed = JSON.parse(response.trim());
+    expect(parsed.status).toBe('ok');
+    expect(parsed.data.claimed).toBe(true);
+
+    client.end();
+  });
+
+  it('allows registering task_complete handler', async () => {
+    server.registerHandler('task_complete', async (req: { taskId: string; workerId: string }) => ({
+      success: true,
+      taskId: req.taskId,
+    }));
+    await server.start();
+
+    const client = net.createConnection(socketPath);
+    await new Promise<void>((resolve) => client.once('connect', resolve));
+
+    client.write(JSON.stringify({ command: 'task_complete', taskId: 'task-1', workerId: 'worker-1' }) + '\n');
+
+    const response = await new Promise<string>((resolve) => {
+      client.once('data', (data) => resolve(data.toString()));
+    });
+
+    const parsed = JSON.parse(response.trim());
+    expect(parsed.status).toBe('ok');
+    expect(parsed.data.success).toBe(true);
+
+    client.end();
+  });
+
+  it('allows registering exec handler', async () => {
+    server.registerHandler('exec', async (req: { args: string[] }) => ({
+      exitCode: 0,
+      stdout: 'output',
+      command: req.args.join(' '),
+    }));
+    await server.start();
+
+    const client = net.createConnection(socketPath);
+    await new Promise<void>((resolve) => client.once('connect', resolve));
+
+    client.write(JSON.stringify({ command: 'exec', args: ['npm', 'test'] }) + '\n');
+
+    const response = await new Promise<string>((resolve) => {
+      client.once('data', (data) => resolve(data.toString()));
+    });
+
+    const parsed = JSON.parse(response.trim());
+    expect(parsed.status).toBe('ok');
+    expect(parsed.data.exitCode).toBe(0);
+
+    client.end();
+  });
+
+  it('allows registering shutdown handler', async () => {
+    let shutdownCalled = false;
+    server.registerHandler('shutdown', async () => {
+      shutdownCalled = true;
+      return { shutting_down: true };
+    });
+    await server.start();
+
+    const client = net.createConnection(socketPath);
+    await new Promise<void>((resolve) => client.once('connect', resolve));
+
+    client.write(JSON.stringify({ command: 'shutdown' }) + '\n');
+
+    const response = await new Promise<string>((resolve) => {
+      client.once('data', (data) => resolve(data.toString()));
+    });
+
+    const parsed = JSON.parse(response.trim());
+    expect(parsed.status).toBe('ok');
+    expect(shutdownCalled).toBe(true);
+
+    client.end();
+  });
+
+  it('allows registering status handler', async () => {
+    server.registerHandler('status', async (req: { eventCount?: number }) => ({
+      running: true,
+      recentEvents: req.eventCount || 10,
+    }));
+    await server.start();
+
+    const client = net.createConnection(socketPath);
+    await new Promise<void>((resolve) => client.once('connect', resolve));
+
+    client.write(JSON.stringify({ command: 'status', eventCount: 5 }) + '\n');
+
+    const response = await new Promise<string>((resolve) => {
+      client.once('data', (data) => resolve(data.toString()));
+    });
+
+    const parsed = JSON.parse(response.trim());
+    expect(parsed.status).toBe('ok');
+    expect(parsed.data.running).toBe(true);
+
+    client.end();
+  });
+});

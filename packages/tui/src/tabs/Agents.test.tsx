@@ -182,4 +182,96 @@ describe('Agents Tab', () => {
     expect(frame).toMatch(/idle-agent/);
     expect(frame).toMatch(/stopped-agent/);
   });
+
+  describe('Context budget display', () => {
+    it('should show context usage for each agent', () => {
+      const state = {
+        workflowId: 'test-workflow',
+        workflowName: 'Test Workflow',
+        startedAt: Date.now(),
+        currentPhase: 'implementation',
+        phaseHistory: [],
+        tasks: {},
+        checkpoints: {},
+        pendingHumanActions: [],
+        agents: {
+          'worker-1': {
+            id: 'worker-1',
+            status: 'active' as const,
+            type: 'worker',
+            currentTask: null,
+            pid: null,
+            sessionId: null,
+            lastHeartbeat: null,
+            violationCounts: {},
+            contextUsage: { current: 80000, max: 100000 },
+          },
+        },
+      };
+
+      const { lastFrame } = render(<Agents state={state} onAttach={() => {}} />);
+
+      expect(lastFrame()).toContain('Context: 80%');
+    });
+
+    it('should highlight when context is high', () => {
+      const state = {
+        workflowId: 'test-workflow',
+        workflowName: 'Test Workflow',
+        startedAt: Date.now(),
+        currentPhase: 'implementation',
+        phaseHistory: [],
+        tasks: {},
+        checkpoints: {},
+        pendingHumanActions: [],
+        agents: {
+          'worker-1': {
+            id: 'worker-1',
+            status: 'active' as const,
+            type: 'worker',
+            currentTask: null,
+            pid: null,
+            sessionId: null,
+            lastHeartbeat: null,
+            violationCounts: {},
+            contextUsage: { current: 90000, max: 100000 },
+          },
+        },
+      };
+
+      const { lastFrame } = render(<Agents state={state} onAttach={() => {}} />);
+
+      // Should show warning color for >80%
+      expect(lastFrame()).toContain('90%');
+    });
+
+    it('should not show context usage when not available', () => {
+      const state = {
+        workflowId: 'test-workflow',
+        workflowName: 'Test Workflow',
+        startedAt: Date.now(),
+        currentPhase: 'implementation',
+        phaseHistory: [],
+        tasks: {},
+        checkpoints: {},
+        pendingHumanActions: [],
+        agents: {
+          'worker-1': {
+            id: 'worker-1',
+            status: 'active' as const,
+            type: 'worker',
+            currentTask: null,
+            pid: null,
+            sessionId: null,
+            lastHeartbeat: null,
+            violationCounts: {},
+          },
+        },
+      };
+
+      const { lastFrame } = render(<Agents state={state} onAttach={() => {}} />);
+
+      expect(lastFrame()).not.toContain('Context:');
+    });
+  });
 });

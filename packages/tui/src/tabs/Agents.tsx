@@ -3,6 +3,20 @@ import React from 'react';
 import { Box, Text } from 'ink';
 import type { WorkflowState } from '@hyh/daemon';
 
+interface ContextUsage {
+  current: number;
+  max: number;
+}
+
+interface AgentWithContext {
+  id: string;
+  type: string;
+  status: 'idle' | 'active' | 'stopped';
+  currentTask: string | null;
+  lastHeartbeat: number | null;
+  contextUsage?: ContextUsage;
+}
+
 interface AgentsProps {
   state: WorkflowState | null;
   onAttach?: (agentId: string) => void;
@@ -35,6 +49,17 @@ function getStatusColor(status: string): string | undefined {
   }
 }
 
+function AgentContextUsage({ usage }: { usage?: ContextUsage }) {
+  if (!usage) return null;
+
+  const pct = Math.round((usage.current / usage.max) * 100);
+  const color = pct > 80 ? 'red' : pct > 60 ? 'yellow' : 'green';
+
+  return (
+    <Text color={color}>Context: {pct}%</Text>
+  );
+}
+
 export function Agents({ state, onAttach }: AgentsProps) {
   if (!state) {
     return <Text dimColor>No agents</Text>;
@@ -54,6 +79,7 @@ export function Agents({ state, onAttach }: AgentsProps) {
       </Box>
       {agents.map(agent => {
         const heartbeat = formatHeartbeat(agent.lastHeartbeat);
+        const agentWithContext = agent as AgentWithContext;
         return (
           <Box key={agent.id} marginTop={1} flexDirection="column">
             <Text>
@@ -67,6 +93,11 @@ export function Agents({ state, onAttach }: AgentsProps) {
             </Text>
             {heartbeat && (
               <Text dimColor>  Last heartbeat: {heartbeat}</Text>
+            )}
+            {agentWithContext.contextUsage && (
+              <Box marginLeft={2}>
+                <AgentContextUsage usage={agentWithContext.contextUsage} />
+              </Box>
             )}
           </Box>
         );

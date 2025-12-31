@@ -1,6 +1,7 @@
 // packages/daemon/src/ipc/server.test.ts
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { IPCServer } from './server.js';
+import { IPCClient } from './client.js';
 import * as net from 'node:net';
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
@@ -65,5 +66,29 @@ describe('IPCServer', () => {
     expect(parsed.status).toBe('error');
 
     client.end();
+  });
+
+  it('should broadcast events to subscribed clients', async () => {
+    server = new IPCServer(socketPath);
+    await server.start();
+
+    const client = new IPCClient(socketPath);
+    await client.connect();
+
+    const events: unknown[] = [];
+    client.onEvent('trajectory', (event) => events.push(event));
+
+    await client.request({ command: 'subscribe', channel: 'trajectory' });
+
+    // Server broadcasts an event
+    server.broadcast('trajectory', { type: 'tool_use', tool: 'Read' });
+
+    // Wait briefly for event to arrive
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
+    expect(events.length).toBeGreaterThan(0);
+    expect(events[0]).toMatchObject({ type: 'tool_use' });
+
+    client.disconnect();
   });
 });

@@ -5,17 +5,37 @@ import * as path from 'node:path';
 import { EventEmitter } from 'node:events';
 import { IPCRequestSchema, IPCResponse } from '../types/ipc.js';
 
-type RequestHandler = (request: unknown) => Promise<unknown>;
+type RequestHandler = (request: unknown, socket: net.Socket) => Promise<unknown>;
 
 export class IPCServer extends EventEmitter {
   private readonly socketPath: string;
   private server: net.Server | null = null;
   private clients: Set<net.Socket> = new Set();
   private handlers: Map<string, RequestHandler> = new Map();
+  private subscriptions: Map<string, Set<net.Socket>> = new Map();
 
   constructor(socketPath: string) {
     super();
     this.socketPath = socketPath;
+
+    // Register built-in subscribe handler
+    this.registerHandler(
+      'subscribe',
+      async (request: unknown, socket: net.Socket) => {
+        const { channel } = request as { channel: string };
+        if (!this.subscriptions.has(channel)) {
+          this.subscriptions.set(channel, new Set());
+        }
+        this.subscriptions.get(channel)!.add(socket);
+
+        // Clean up subscription on disconnect
+        socket.once('close', () => {
+          this.subscriptions.get(channel)?.delete(socket);
+        });
+
+        return { subscribed: channel };
+      }
+    );
   }
 
   registerHandler(command: string, handler: RequestHandler): void {
@@ -68,10 +88,13 @@ export class IPCServer extends EventEmitter {
     }
   }
 
-  broadcast(event: unknown): void {
-    const message = JSON.stringify(event) + '\n';
-    for (const client of this.clients) {
-      client.write(message);
+  broadcast(channel: string, data: unknown): void {
+    const subscribers = this.subscriptions.get(channel);
+    if (!subscribers) return;
+
+    const message = JSON.stringify({ type: 'event', event: channel, data }) + '\n';
+    for (const socket of subscribers) {
+      socket.write(message);
     }
   }
 
@@ -89,7 +112,7 @@ export class IPCServer extends EventEmitter {
 
       for (const line of lines) {
         if (line.trim()) {
-          const response = await this.dispatch(line);
+          const response = await this.dispatch(line, socket);
           socket.write(JSON.stringify(response) + '\n');
         }
       }
@@ -105,7 +128,10 @@ export class IPCServer extends EventEmitter {
     });
   }
 
-  private async dispatch(raw: string): Promise<IPCResponse> {
+  private async dispatch(
+    raw: string,
+    socket: net.Socket
+  ): Promise<IPCResponse> {
     try {
       const data = JSON.parse(raw);
       const parseResult = IPCRequestSchema.safeParse(data);
@@ -127,7 +153,7 @@ export class IPCServer extends EventEmitter {
         };
       }
 
-      const result = await handler(request);
+      const result = await handler(request, socket);
       return {
         status: 'ok',
         data: result,

@@ -33,6 +33,11 @@ export function Tasks({ state }: TasksProps) {
           </Text>
         </Box>
       ))}
+      <Box marginTop={1}>
+        <Text dimColor>
+          ✓ completed  ● running  ○ pending  ✗ failed
+        </Text>
+      </Box>
     </Box>
   );
 }

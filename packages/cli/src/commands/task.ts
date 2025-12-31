@@ -89,4 +89,33 @@ export function registerTaskCommand(program: Command): void {
         await client.disconnect();
       }
     });
+
+  taskCmd
+    .command('reset')
+    .description('Clear all tasks and reset workflow')
+    .action(async () => {
+      const socketPath = await findSocketPath();
+      if (!socketPath) {
+        console.error('No active workflow');
+        process.exit(1);
+      }
+
+      const client = new IPCClient(socketPath);
+
+      try {
+        await client.connect();
+        const response = await client.request({
+          command: 'plan_reset',
+        });
+
+        if (response.status === 'error') {
+          console.error('Error:', response.message);
+          process.exit(1);
+        }
+
+        console.log('Tasks reset successfully');
+      } finally {
+        await client.disconnect();
+      }
+    });
 }

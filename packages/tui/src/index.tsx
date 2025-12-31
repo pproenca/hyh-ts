@@ -5,13 +5,15 @@ import { useDaemon } from './hooks/useDaemon.js';
 import { Overview } from './tabs/Overview.js';
 import { Agents } from './tabs/Agents.js';
 import { Tasks } from './tabs/Tasks.js';
+import { Logs } from './tabs/Logs.js';
+import { Trajectory } from './tabs/Trajectory.js';
 import type { WorkflowState } from '@hyh/daemon';
 
 const TABS = ['Overview', 'Agents', 'Tasks', 'Logs', 'Trajectory'] as const;
 
 type TabComponent = React.ComponentType<{ state: WorkflowState | null }>;
 
-const TAB_COMPONENTS: TabComponent[] = [Overview, Agents, Tasks, Overview, Overview];
+const TAB_COMPONENTS: TabComponent[] = [Overview, Agents, Tasks, Logs, Trajectory];
 
 interface AppProps {
   socketPath: string;

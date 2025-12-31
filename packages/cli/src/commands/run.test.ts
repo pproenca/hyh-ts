@@ -47,3 +47,31 @@ describe('Claude CLI check', () => {
     expect(result).toHaveProperty('available');
   });
 });
+
+describe('EventLoop integration', () => {
+  it('should start event loop when daemon starts', async () => {
+    // Verify EventLoop is available and can be instantiated with Daemon
+    const { Daemon, EventLoop } = await import('@hyh/daemon');
+    expect(EventLoop).toBeDefined();
+    expect(typeof EventLoop).toBe('function');
+
+    // Verify the EventLoop has the expected API
+    const mockDaemon = {
+      checkSpawnTriggers: async () => [],
+      spawnAgents: async () => {},
+      checkPhaseTransition: async () => false,
+      stateManager: { flush: () => {} },
+      heartbeatMonitor: { getOverdueAgents: () => [] },
+    };
+    const eventLoop = new EventLoop(mockDaemon, { tickInterval: 1000 });
+    expect(eventLoop.start).toBeDefined();
+    expect(eventLoop.stop).toBeDefined();
+    expect(eventLoop.isRunning).toBe(false);
+
+    eventLoop.start();
+    expect(eventLoop.isRunning).toBe(true);
+
+    eventLoop.stop();
+    expect(eventLoop.isRunning).toBe(false);
+  });
+});

@@ -86,14 +86,19 @@ export function registerRunCommand(program: Command): void {
         }
 
         // Import and start daemon
-        const { Daemon } = await import('@hyh/daemon');
+        const { Daemon, EventLoop } = await import('@hyh/daemon');
         const daemon = new Daemon({ worktreeRoot: projectDir });
         await daemon.start();
         console.log(`Daemon started on ${daemon.getSocketPath()}`);
 
+        // Start event loop
+        const eventLoop = new EventLoop(daemon, { tickInterval: 1000 });
+        eventLoop.start();
+
         // Keep running until interrupted
         process.on('SIGINT', async () => {
           console.log('\nShutting down...');
+          eventLoop.stop();
           await daemon.stop();
           process.exit(0);
         });

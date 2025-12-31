@@ -13,6 +13,7 @@ import { registerResumeCommand } from './commands/resume.js';
 import { registerLogsCommand } from './commands/logs.js';
 import { registerSimulateCommand } from './commands/simulate.js';
 import { registerMetricsCommand } from './commands/metrics.js';
+import { registerSubagentVerifyCommand } from './commands/subagent-verify.js';
 
 const program = new Command();
 
@@ -42,5 +43,6 @@ registerResumeCommand(program);
 registerLogsCommand(program);
 registerSimulateCommand(program);
 registerMetricsCommand(program);
+registerSubagentVerifyCommand(program);
 
 program.parse();

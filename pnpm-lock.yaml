@@ -38,6 +38,9 @@ importers:
       '@hyh/dsl':
         specifier: workspace:*
         version: link:../dsl
+      '@hyh/tui':
+        specifier: workspace:*
+        version: link:../tui
       commander:
         specifier: ^12.0.0
         version: 12.1.0
@@ -82,6 +85,9 @@ importers:
       ink:
         specifier: ^5.0.0
         version: 5.2.1(@types/react@18.3.27)(react@18.3.1)
+      react:
+        specifier: ^18.3.1
+        version: 18.3.1
     devDependencies:
       '@testing-library/react':
         specifier: ^16.3.1
@@ -95,9 +101,6 @@ importers:
       jsdom:
         specifier: ^27.4.0
         version: 27.4.0
-      react:
-        specifier: ^18.3.1
-        version: 18.3.1
       react-dom:
         specifier: '18'
         version: 18.3.1(react@18.3.1)

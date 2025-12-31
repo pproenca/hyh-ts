@@ -90,7 +90,12 @@ export function registerRunCommand(program: Command): void {
         if (!options.tui) {
           console.log('Running in headless mode. Press Ctrl+C to stop.');
         } else {
-          console.log('TUI not yet implemented. Running in headless mode.');
+          // Load workflow into daemon
+          await daemon.loadWorkflow(path.join(outputDir, 'workflow.json'));
+
+          // Start TUI
+          const { startTUI } = await import('@hyh/tui');
+          startTUI(daemon.getSocketPath());
         }
       } catch (error) {
         console.error('Failed to run workflow:', error);

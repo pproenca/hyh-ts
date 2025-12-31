@@ -19,6 +19,7 @@
   "dependencies": {
     "@hyh/dsl": "workspace:*",
     "@hyh/daemon": "workspace:*",
+    "@hyh/tui": "workspace:*",
     "commander": "^12.0.0"
   },
   "devDependencies": {

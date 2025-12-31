@@ -90,7 +90,13 @@ export class PhaseBuilder {
     return this._workflow.phase(name);
   }
 
-  build(): CompiledPhase {
+  // Build the workflow (delegates to workflow's build)
+  build(): ReturnType<WorkflowBuilderLike['build']> {
+    return this._workflow.build();
+  }
+
+  // Build just this phase (for internal use)
+  buildPhase(): CompiledPhase {
     return {
       name: this._name,
       agent: this._agent ?? '',

@@ -12,13 +12,13 @@ describe('PhaseBuilder', () => {
 
   it('creates phase with name', () => {
     const p = new PhaseBuilder('explore', mockWorkflow as any);
-    expect(p.build().name).toBe('explore');
+    expect(p.buildPhase().name).toBe('explore');
   });
 
   it('sets agent', () => {
     const orch = agent('orchestrator').model('opus');
     const p = new PhaseBuilder('explore', mockWorkflow as any).agent(orch);
-    expect(p.build().agent).toBe('orchestrator');
+    expect(p.buildPhase().agent).toBe('orchestrator');
   });
 
   it('sets expects and forbids', () => {
@@ -26,7 +26,7 @@ describe('PhaseBuilder', () => {
       .expects('Read', 'Grep')
       .forbids('Write', 'Edit');
 
-    const built = p.build();
+    const built = p.buildPhase();
     expect(built.expects).toEqual(['Read', 'Grep']);
     expect(built.forbids).toEqual(['Write', 'Edit']);
   });
@@ -36,7 +36,7 @@ describe('PhaseBuilder', () => {
       .requires('architecture.md')
       .output('plan.md', 'tasks.md');
 
-    const built = p.build();
+    const built = p.buildPhase();
     expect(built.requires).toEqual(['architecture.md']);
     expect(built.outputs).toEqual(['plan.md', 'tasks.md']);
   });

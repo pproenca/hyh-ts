@@ -75,6 +75,15 @@ export const CheckpointStateSchema = z.object({
 
 export type CheckpointState = z.infer<typeof CheckpointStateSchema>;
 
+// Log entry schema
+export const LogEntrySchema = z.object({
+  timestamp: z.number(),
+  agentId: z.string(),
+  message: z.string(),
+});
+
+export type LogEntry = z.infer<typeof LogEntrySchema>;
+
 // Full workflow state schema
 export const WorkflowStateSchema = z.object({
   workflowId: z.string(),
@@ -86,6 +95,7 @@ export const WorkflowStateSchema = z.object({
   agents: z.record(z.string(), AgentStateSchema).default({}),
   checkpoints: z.record(z.string(), CheckpointStateSchema).default({}),
   pendingHumanActions: z.array(z.unknown()).default([]),
+  recentLogs: z.array(LogEntrySchema).optional(),
 });
 
 export type WorkflowState = z.infer<typeof WorkflowStateSchema>;

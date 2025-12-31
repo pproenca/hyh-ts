@@ -1,6 +1,6 @@
 // packages/daemon/src/types/state.test.ts
 import { describe, it, expect } from 'vitest';
-import { TaskStateSchema, WorkflowStateSchema } from './state.js';
+import { TaskStateSchema, WorkflowStateSchema, WorkflowState } from './state.js';
 
 describe('TaskState', () => {
   it('validates valid task state', () => {
@@ -39,5 +39,23 @@ describe('WorkflowState', () => {
       },
     });
     expect(result.success).toBe(true);
+  });
+
+  it('should support recentLogs field', () => {
+    const state: WorkflowState = {
+      workflowId: 'test',
+      workflowName: 'test',
+      startedAt: Date.now(),
+      currentPhase: 'plan',
+      phaseHistory: [],
+      tasks: {},
+      agents: {},
+      checkpoints: {},
+      pendingHumanActions: [],
+      recentLogs: [
+        { timestamp: Date.now(), agentId: 'worker-1', message: 'test' },
+      ],
+    };
+    expect(state.recentLogs).toHaveLength(1);
   });
 });

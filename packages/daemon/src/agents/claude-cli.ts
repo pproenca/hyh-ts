@@ -20,7 +20,7 @@ export async function checkClaudeCli(): Promise<ClaudeCliInfo> {
     return {
       available: true,
       version: versionStr,
-    } as ClaudeCliInfo;
+    };
   } catch (error) {
     return {
       available: false,

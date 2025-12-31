@@ -173,6 +173,17 @@ export class StateManager {
     });
   }
 
+  /**
+   * Flush cached state to disk.
+   * Note: This is a no-op since all state mutations are immediately persisted
+   * via atomic writes. This method exists to satisfy the EventLoop interface
+   * and can be used for future optimizations (e.g., batched writes).
+   */
+  flush(): void {
+    // No-op: writes are already immediate and atomic
+    // The cachedState is always in sync with disk after save()
+  }
+
   async update(updater: (state: WorkflowState) => void): Promise<void> {
     return this.mutex.runExclusive(async () => {
       let state = await this.loadInternal();

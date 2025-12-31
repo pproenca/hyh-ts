@@ -118,8 +118,11 @@ export function registerRunCommand(program: Command): void {
           });
 
           console.log(`Imported ${parsed.length} tasks from plan.md`);
-        } catch {
-          // No plan.md, continue without importing
+        } catch (error) {
+          // Only silently ignore ENOENT (file not found)
+          if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
+            console.warn(`Warning: Failed to import plan.md: ${error instanceof Error ? error.message : String(error)}`);
+          }
         }
 
         if (!options.tui) {

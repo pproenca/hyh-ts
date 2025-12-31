@@ -6,7 +6,7 @@ export interface Daemon {
   checkPhaseTransition(): Promise<boolean>;
   stateManager: { flush(): void };
   heartbeatMonitor: { getOverdueAgents(): unknown[] };
-  getActiveAgents?(): { id: string; pollEvents(): unknown[] }[];
+  getActiveAgents?(): { agentId: string; pollEvents(): unknown[] }[];
   processAgentEvent?(agentId: string, event: unknown): Promise<unknown>;
 }
 
@@ -55,7 +55,7 @@ export class EventLoop {
       for (const agent of agents) {
         const events = agent.pollEvents();
         for (const event of events) {
-          await this.daemon.processAgentEvent(agent.id, event);
+          await this.daemon.processAgentEvent(agent.agentId, event);
         }
       }
     }

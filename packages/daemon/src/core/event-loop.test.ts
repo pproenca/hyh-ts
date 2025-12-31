@@ -63,7 +63,7 @@ describe('EventLoop', () => {
       stateManager: { flush: vi.fn() },
       heartbeatMonitor: { getOverdueAgents: vi.fn().mockReturnValue([]) },
       getActiveAgents: vi.fn().mockReturnValue([{
-        id: 'agent-1',
+        agentId: 'agent-1',
         pollEvents: vi.fn().mockReturnValue([{ type: 'tool_use', tool: 'Read' }]),
       }]),
       processAgentEvent: vi.fn().mockResolvedValue({}),

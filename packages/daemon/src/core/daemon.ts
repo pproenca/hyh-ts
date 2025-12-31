@@ -151,7 +151,7 @@ export class Daemon {
         model: (agentConfig.model || 'sonnet') as 'haiku' | 'sonnet' | 'opus',
         tools: toolNames,
         systemPromptPath: agentConfig.systemPrompt || '',
-        worktreePath,
+        ...(worktreePath && { worktreePath }),
       };
 
       const process = await this.agentManager.spawn(fullSpec);

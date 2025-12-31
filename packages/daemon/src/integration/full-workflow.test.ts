@@ -191,6 +191,9 @@ describe('Full workflow E2E', () => {
       };
     });
 
+    // Mock spawnAgents to prevent actual Claude CLI spawning
+    vi.spyOn(daemon, 'spawnAgents').mockResolvedValue();
+
     // Run tick cycle
     const result = await daemon.tick();
 

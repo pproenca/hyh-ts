@@ -42,3 +42,71 @@ describe('WorkflowLoader', () => {
     expect(await loader.exists()).toBe(true);
   });
 });
+
+describe('WorkflowLoader load', () => {
+  let testDir: string;
+
+  beforeEach(async () => {
+    testDir = await fs.mkdtemp(path.join(os.tmpdir(), 'hyh-test-'));
+    await fs.mkdir(path.join(testDir, '.hyh'), { recursive: true });
+  });
+
+  afterEach(async () => {
+    await fs.rm(testDir, { recursive: true, force: true });
+  });
+
+  it('loads workflow with agents', async () => {
+    const workflow = {
+      name: 'test',
+      agents: {
+        worker: { name: 'worker', model: 'sonnet' },
+      },
+      phases: [],
+    };
+    await fs.writeFile(
+      path.join(testDir, '.hyh', 'workflow.json'),
+      JSON.stringify(workflow)
+    );
+
+    const loader = new WorkflowLoader(testDir);
+    const loaded = await loader.load();
+
+    expect(loaded.agents!.worker).toBeDefined();
+    expect(loaded.agents!.worker.model).toBe('sonnet');
+  });
+
+  it('loads workflow with queues', async () => {
+    const workflow = {
+      name: 'test',
+      phases: [],
+      queues: {
+        tasks: { name: 'tasks', timeout: 600 },
+      },
+    };
+    await fs.writeFile(
+      path.join(testDir, '.hyh', 'workflow.json'),
+      JSON.stringify(workflow)
+    );
+
+    const loader = new WorkflowLoader(testDir);
+    const loaded = await loader.load();
+
+    expect(loaded.queues!.tasks).toBeDefined();
+    expect(loaded.queues!.tasks.timeout).toBe(600);
+  });
+
+  it('throws when workflow file is invalid JSON', async () => {
+    await fs.writeFile(
+      path.join(testDir, '.hyh', 'workflow.json'),
+      'not valid json'
+    );
+
+    const loader = new WorkflowLoader(testDir);
+    await expect(loader.load()).rejects.toThrow();
+  });
+
+  it('throws when workflow file does not exist', async () => {
+    const loader = new WorkflowLoader(testDir);
+    await expect(loader.load()).rejects.toThrow();
+  });
+});

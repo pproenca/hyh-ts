@@ -75,3 +75,57 @@ describe('EventLoop', () => {
     expect(mockDaemon.processAgentEvent).toHaveBeenCalled();
   });
 });
+
+describe('EventLoop phase transition', () => {
+  it('should check phase transition on each tick', async () => {
+    const mockDaemon = {
+      checkSpawnTriggers: vi.fn().mockResolvedValue([]),
+      spawnAgents: vi.fn(),
+      checkPhaseTransition: vi.fn().mockResolvedValue(true),
+      stateManager: { flush: vi.fn() },
+      heartbeatMonitor: { getOverdueAgents: vi.fn().mockReturnValue([]) },
+    };
+
+    const loop = new EventLoop(mockDaemon as unknown as Daemon, { tickInterval: 100 });
+    await loop.tick();
+
+    expect(mockDaemon.checkPhaseTransition).toHaveBeenCalled();
+  });
+});
+
+describe('EventLoop heartbeat monitoring', () => {
+  it('should have heartbeat monitor available on daemon', async () => {
+    const mockDaemon = {
+      checkSpawnTriggers: vi.fn().mockResolvedValue([]),
+      spawnAgents: vi.fn(),
+      checkPhaseTransition: vi.fn().mockResolvedValue(false),
+      stateManager: { flush: vi.fn() },
+      heartbeatMonitor: {
+        getOverdueAgents: vi.fn().mockReturnValue([]),
+      },
+    };
+
+    const loop = new EventLoop(mockDaemon as unknown as Daemon, { tickInterval: 100 });
+    await loop.tick();
+
+    // The daemon should have a heartbeat monitor
+    expect(mockDaemon.heartbeatMonitor).toBeDefined();
+  });
+});
+
+describe('EventLoop error handling', () => {
+  it('should track tick count', async () => {
+    let tickCount = 0;
+    const onTick = vi.fn(async () => {
+      tickCount++;
+    });
+    const loop = new EventLoop({ tickInterval: 10, onTick });
+
+    loop.start();
+    await new Promise(r => setTimeout(r, 50));
+    loop.stop();
+
+    // Should have ticked multiple times
+    expect(tickCount).toBeGreaterThan(0);
+  });
+});

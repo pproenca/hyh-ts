@@ -32,3 +32,41 @@ describe('ApprovalDialog', () => {
     expect(lastFrame()).toContain('Approve to continue?');
   });
 });
+
+describe('ApprovalDialog useInput hook', () => {
+  // The useInput hook is tested through component structure
+  // Direct keyboard handling requires integration testing
+  it('defines Y/y as approve key', () => {
+    // The component accepts Y/y for approve
+    // This is defined in the useInput handler
+    const { lastFrame } = render(
+      <ApprovalDialog checkpoint={{ id: 'cp-1' }} onAction={vi.fn()} />
+    );
+    expect(lastFrame()).toContain('[Y]');
+  });
+
+  it('defines N/n as reject key', () => {
+    // The component accepts N/n for reject
+    const { lastFrame } = render(
+      <ApprovalDialog checkpoint={{ id: 'cp-1' }} onAction={vi.fn()} />
+    );
+    expect(lastFrame()).toContain('[N]');
+  });
+});
+
+describe('ApprovalDialog display', () => {
+  it('shows Human Action Required header', () => {
+    const { lastFrame } = render(
+      <ApprovalDialog checkpoint={{ id: 'cp-1' }} onAction={vi.fn()} />
+    );
+    expect(lastFrame()).toContain('Human Action Required');
+  });
+
+  it('shows Y and N key hints', () => {
+    const { lastFrame } = render(
+      <ApprovalDialog checkpoint={{ id: 'cp-1' }} onAction={vi.fn()} />
+    );
+    expect(lastFrame()).toContain('[Y]');
+    expect(lastFrame()).toContain('[N]');
+  });
+});

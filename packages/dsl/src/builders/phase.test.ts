@@ -3,6 +3,9 @@ import { describe, it, expect } from 'vitest';
 import { PhaseBuilder } from './phase.js';
 import { agent } from './agent.js';
 import { workflow } from './workflow.js';
+import { queue } from './queue.js';
+import { gate } from './gate.js';
+import { human } from '../checkpoints/human.js';
 
 describe('PhaseBuilder', () => {
   const mockWorkflow = {
@@ -41,6 +44,115 @@ describe('PhaseBuilder', () => {
     const built = p.buildPhase();
     expect(built.requires).toEqual(['architecture.md']);
     expect(built.outputs).toEqual(['plan.md', 'tasks.md']);
+  });
+});
+
+describe('PhaseBuilder.queue', () => {
+  it('binds queue to phase', () => {
+    const orch = agent('orch').model('sonnet');
+    const tasks = queue('tasks');
+    const result = workflow('test')
+      .orchestrator(orch)
+      .phase('implement')
+        .agent(orch)
+        .queue(tasks)
+      .build();
+
+    const phase = result.phases.find(p => p.name === 'implement');
+    expect(phase?.queue).toBe('tasks');
+  });
+});
+
+describe('PhaseBuilder.populates', () => {
+  it('sets queue that phase populates', () => {
+    const orch = agent('orch').model('sonnet');
+    const tasks = queue('tasks');
+    const result = workflow('test')
+      .orchestrator(orch)
+      .phase('plan')
+        .agent(orch)
+        .populates(tasks)
+      .build();
+
+    const phase = result.phases.find(p => p.name === 'plan');
+    expect(phase?.populates).toBe('tasks');
+  });
+});
+
+describe('PhaseBuilder.parallel', () => {
+  it('sets parallel to true when called without argument', () => {
+    const orch = agent('orch').model('sonnet');
+    const result = workflow('test')
+      .orchestrator(orch)
+      .phase('implement')
+        .agent(orch)
+        .parallel()
+      .build();
+
+    const phase = result.phases.find(p => p.name === 'implement');
+    expect(phase?.parallel).toBe(true);
+  });
+
+  it('sets parallel to specific count', () => {
+    const orch = agent('orch').model('sonnet');
+    const result = workflow('test')
+      .orchestrator(orch)
+      .phase('implement')
+        .agent(orch)
+        .parallel(5)
+      .build();
+
+    const phase = result.phases.find(p => p.name === 'implement');
+    expect(phase?.parallel).toBe(5);
+  });
+});
+
+describe('PhaseBuilder.gate', () => {
+  it('binds gate to phase', () => {
+    const orch = agent('orch').model('sonnet');
+    const reviewGate = gate('code-review');
+    const result = workflow('test')
+      .orchestrator(orch)
+      .phase('implement')
+        .agent(orch)
+        .gate(reviewGate)
+      .build();
+
+    const phase = result.phases.find(p => p.name === 'implement');
+    expect(phase?.gate).toBe('code-review');
+  });
+});
+
+describe('PhaseBuilder.then', () => {
+  it('sets next queue for flow control', () => {
+    const orch = agent('orch').model('sonnet');
+    const nextQueue = queue('verification-tasks');
+    const result = workflow('test')
+      .orchestrator(orch)
+      .phase('implement')
+        .agent(orch)
+        .then(nextQueue)
+      .build();
+
+    const phase = result.phases.find(p => p.name === 'implement');
+    expect(phase?.then).toBe('verification-tasks');
+  });
+});
+
+describe('PhaseBuilder.checkpoint', () => {
+  it('sets human approval checkpoint', () => {
+    const orch = agent('orch').model('sonnet');
+    const result = workflow('test')
+      .orchestrator(orch)
+      .phase('review')
+        .agent(orch)
+        .checkpoint(human.approval('Ready to proceed?'))
+      .build();
+
+    const phase = result.phases.find(p => p.name === 'review');
+    expect(phase?.checkpoint).toBeDefined();
+    expect(phase?.checkpoint?.type).toBe('approval');
+    expect(phase?.checkpoint?.question).toBe('Ready to proceed?');
   });
 });
 

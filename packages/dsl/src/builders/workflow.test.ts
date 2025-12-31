@@ -77,3 +77,56 @@ describe('WorkflowBuilder.preCompact', () => {
     expect(result.preCompact?.discard).toContain('verbose_logs');
   });
 });
+
+describe('WorkflowBuilder.validation', () => {
+  it('throws error when missing orchestrator', () => {
+    const w = workflow('test');
+    expect(() => w.validate()).toThrow('Workflow must have an orchestrator');
+  });
+
+  it('throws error when no phases defined', () => {
+    const orch = agent('orch').model('sonnet');
+    const w = workflow('test').orchestrator(orch);
+    expect(() => w.validate()).toThrow('Workflow must have at least one phase');
+  });
+
+  it('throws error on duplicate phase names', () => {
+    const orch = agent('orch').model('sonnet');
+    // Build the workflow fully, then call validate on the WorkflowBuilder
+    // Need to use a workaround since phase() returns PhaseBuilder
+    const wBuilder = workflow('test').orchestrator(orch);
+    wBuilder.phase('explore').agent(orch);
+    wBuilder.phase('explore').agent(orch);
+    expect(() => wBuilder.validate()).toThrow('Duplicate phase name: explore');
+  });
+
+  it('passes validation with valid workflow', () => {
+    const orch = agent('orch').model('sonnet');
+    const wBuilder = workflow('test').orchestrator(orch);
+    wBuilder.phase('plan').agent(orch);
+    wBuilder.phase('implement').agent(orch);
+    expect(() => wBuilder.validate()).not.toThrow();
+  });
+});
+
+describe('WorkflowBuilder.resumable with options', () => {
+  it('sets resumable with onResume option', () => {
+    const orch = agent('orch').model('sonnet');
+    const w = workflow('feature')
+      .resumable({ onResume: 'continue' })
+      .orchestrator(orch)
+      .phase('p1').agent(orch)
+      .build();
+    expect(w.resumable).toBe(true);
+  });
+
+  it('sets resumable with restart option', () => {
+    const orch = agent('orch').model('sonnet');
+    const w = workflow('feature')
+      .resumable({ onResume: 'restart' })
+      .orchestrator(orch)
+      .phase('p1').agent(orch)
+      .build();
+    expect(w.resumable).toBe(true);
+  });
+});

@@ -125,13 +125,20 @@ export class WorkflowBuilder {
     if (!this._orchestrator) {
       throw new Error('Workflow must have an orchestrator');
     }
-    if (this._phases.length === 0) {
+
+    // Consider current phase in progress
+    const allPhases = [...this._phases];
+    if (this._currentPhase) {
+      allPhases.push(this._currentPhase);
+    }
+
+    if (allPhases.length === 0) {
       throw new Error('Workflow must have at least one phase');
     }
 
     // Check for duplicate phase names
     const names = new Set<string>();
-    for (const phase of this._phases) {
+    for (const phase of allPhases) {
       const name = phase.buildPhase().name;
       if (names.has(name)) {
         throw new Error(`Duplicate phase name: ${name}`);

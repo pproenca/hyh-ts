@@ -85,11 +85,19 @@ export interface CompiledPhase {
   contextBudget?: number;
 }
 
+// Example task for simulation mode
+export interface ExampleTask {
+  title: string;
+  description: string;
+}
+
 // Compiled queue
 export interface CompiledQueue {
   name: string;
   readyPredicate: string;
+  donePredicate?: string;
   timeout: number;
+  examples?: ExampleTask[];
 }
 
 // Compiled gate

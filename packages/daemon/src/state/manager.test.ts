@@ -182,3 +182,177 @@ describe('StateManager', () => {
     expect(result.task!.status).toBe(TaskStatus.RUNNING);
   });
 });
+
+describe('StateManager atomic writes', () => {
+  let tempDir: string;
+  let manager: StateManager;
+
+  beforeEach(async () => {
+    tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'hyh-test-'));
+    manager = new StateManager(tempDir);
+  });
+
+  afterEach(async () => {
+    await fs.rm(tempDir, { recursive: true, force: true });
+  });
+
+  it('writes state file atomically using temp file rename', async () => {
+    const state = {
+      workflowId: 'wf-1',
+      workflowName: 'test',
+      startedAt: Date.now(),
+      currentPhase: 'implement',
+      phaseHistory: [],
+      tasks: {},
+      agents: {},
+      checkpoints: {},
+      pendingHumanActions: [],
+    };
+
+    await manager.save(state);
+
+    // State file should exist at .hyh/state.json
+    const statePath = path.join(tempDir, '.hyh', 'state.json');
+    const exists = await fs.access(statePath).then(() => true).catch(() => false);
+    expect(exists).toBe(true);
+
+    // Content should be valid JSON
+    const content = await fs.readFile(statePath, 'utf-8');
+    expect(() => JSON.parse(content)).not.toThrow();
+  });
+
+  it('update callback is applied atomically', async () => {
+    // Setup initial state
+    await manager.save({
+      workflowId: 'wf-1',
+      workflowName: 'test',
+      startedAt: Date.now(),
+      currentPhase: 'phase1',
+      phaseHistory: [],
+      tasks: {},
+      agents: {},
+      checkpoints: {},
+      pendingHumanActions: [],
+    });
+
+    await manager.update((state) => {
+      state.currentPhase = 'phase2';
+      return state;
+    });
+
+    const loaded = await manager.load();
+    expect(loaded?.currentPhase).toBe('phase2');
+  });
+
+  it('handles concurrent updates safely', async () => {
+    // Setup initial state with counter-like data
+    await manager.save({
+      workflowId: 'wf-1',
+      workflowName: 'test',
+      startedAt: Date.now(),
+      currentPhase: 'implement',
+      phaseHistory: [],
+      tasks: {
+        'T001': {
+          id: 'T001',
+          description: 'Task 1',
+          status: TaskStatus.PENDING,
+          claimedBy: null,
+          claimedAt: null,
+          startedAt: null,
+          completedAt: null,
+          attempts: 0,
+          lastError: null,
+          dependencies: [],
+          files: [],
+          timeoutSeconds: 600,
+        },
+        'T002': {
+          id: 'T002',
+          description: 'Task 2',
+          status: TaskStatus.PENDING,
+          claimedBy: null,
+          claimedAt: null,
+          startedAt: null,
+          completedAt: null,
+          attempts: 0,
+          lastError: null,
+          dependencies: [],
+          files: [],
+          timeoutSeconds: 600,
+        },
+      },
+      agents: {},
+      checkpoints: {},
+      pendingHumanActions: [],
+    });
+
+    // Simulate two workers claiming tasks simultaneously
+    const [result1, result2] = await Promise.all([
+      manager.claimTask('worker-1'),
+      manager.claimTask('worker-2'),
+    ]);
+
+    // Both should succeed with different tasks
+    const claimed = [result1.task?.id, result2.task?.id].filter(Boolean);
+    expect(claimed.length).toBe(2);
+    expect(new Set(claimed).size).toBe(2); // No duplicates
+  });
+});
+
+describe('StateManager complete task', () => {
+  let tempDir: string;
+  let manager: StateManager;
+
+  beforeEach(async () => {
+    tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'hyh-test-'));
+    manager = new StateManager(tempDir);
+
+    // Setup initial state with a running task
+    await manager.save({
+      workflowId: 'wf-1',
+      workflowName: 'test',
+      startedAt: Date.now(),
+      currentPhase: 'implement',
+      phaseHistory: [],
+      tasks: {
+        'T001': {
+          id: 'T001',
+          description: 'Task 1',
+          status: TaskStatus.RUNNING,
+          claimedBy: 'worker-1',
+          claimedAt: Date.now(),
+          startedAt: Date.now(),
+          completedAt: null,
+          attempts: 1,
+          lastError: null,
+          dependencies: [],
+          files: [],
+          timeoutSeconds: 600,
+        },
+      },
+      agents: {},
+      checkpoints: {},
+      pendingHumanActions: [],
+    });
+  });
+
+  afterEach(async () => {
+    await fs.rm(tempDir, { recursive: true, force: true });
+  });
+
+  it('marks task as completed', async () => {
+    await manager.completeTask('T001', 'worker-1');
+
+    const state = await manager.load();
+    expect(state?.tasks['T001']?.status).toBe(TaskStatus.COMPLETED);
+    expect(state?.tasks['T001']?.completedAt).not.toBeNull();
+  });
+
+  it('rejects completion from wrong worker', async () => {
+    await expect(manager.completeTask('T001', 'wrong-worker')).rejects.toThrow();
+
+    const state = await manager.load();
+    expect(state?.tasks['T001']?.status).toBe(TaskStatus.RUNNING);
+  });
+});

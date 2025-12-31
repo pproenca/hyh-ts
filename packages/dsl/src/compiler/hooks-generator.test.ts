@@ -88,3 +88,65 @@ describe('generateHooksJson', () => {
     expect(hooks.hooks.PostToolUse![1].matcher).toBe('Bash');
   });
 });
+
+describe('hooks-generator PreCompact', () => {
+  it('generates hooks object with correct structure', () => {
+    const orch = agent('orchestrator').model('opus').role('coordinator');
+    const wf = workflow('test')
+      .orchestrator(orch)
+      .phase('plan').agent(orch)
+      .build();
+
+    const hooks = generateHooksJson(wf);
+
+    // SessionStart and Stop are always present
+    expect(hooks.hooks).toHaveProperty('SessionStart');
+    expect(hooks.hooks).toHaveProperty('Stop');
+    // PostToolUse and SubagentStop are only present when configured
+    expect(hooks).toHaveProperty('hooks');
+  });
+});
+
+describe('hooks-generator SessionStart', () => {
+  it('includes workflow status command in SessionStart', () => {
+    const orch = agent('orchestrator').model('opus').role('coordinator');
+    const wf = workflow('test')
+      .orchestrator(orch)
+      .phase('plan').agent(orch)
+      .build();
+
+    const hooks = generateHooksJson(wf);
+
+    expect(hooks.hooks.SessionStart).toBeDefined();
+    expect(hooks.hooks.SessionStart).toHaveLength(1);
+    expect(hooks.hooks.SessionStart![0].hooks[0].command).toContain('hyh status');
+  });
+});
+
+describe('hooks-generator Stop hook', () => {
+  it('includes verify-complete command in Stop', () => {
+    const orch = agent('orchestrator').model('opus').role('coordinator');
+    const wf = workflow('test')
+      .orchestrator(orch)
+      .phase('plan').agent(orch)
+      .build();
+
+    const hooks = generateHooksJson(wf);
+
+    expect(hooks.hooks.Stop).toBeDefined();
+    expect(hooks.hooks.Stop![0].hooks[0].command).toContain('verify-complete');
+  });
+
+  it('sets timeout on Stop hook', () => {
+    const orch = agent('orchestrator').model('opus').role('coordinator');
+    const wf = workflow('test')
+      .orchestrator(orch)
+      .phase('plan').agent(orch)
+      .build();
+
+    const hooks = generateHooksJson(wf);
+
+    expect(hooks.hooks.Stop![0].hooks[0].timeout).toBeDefined();
+    expect(hooks.hooks.Stop![0].hooks[0].timeout).toBe(120);
+  });
+});

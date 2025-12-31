@@ -10,6 +10,7 @@ import { registerDevCommand } from './commands/dev.js';
 import { registerValidateCommand } from './commands/validate.js';
 import { registerHeartbeatCommand } from './commands/heartbeat.js';
 import { registerResumeCommand } from './commands/resume.js';
+import { registerLogsCommand } from './commands/logs.js';
 
 const program = new Command();
 
@@ -36,5 +37,6 @@ registerDevCommand(program);
 registerValidateCommand(program);
 registerHeartbeatCommand(program);
 registerResumeCommand(program);
+registerLogsCommand(program);
 
 program.parse();

@@ -161,6 +161,28 @@ export class StateManager {
     });
   }
 
+  async update(updater: (state: WorkflowState) => void): Promise<void> {
+    return this.mutex.runExclusive(async () => {
+      let state = await this.loadInternal();
+      if (!state) {
+        // Create default state if none exists
+        state = {
+          workflowId: 'default',
+          workflowName: 'default',
+          startedAt: Date.now(),
+          currentPhase: '',
+          phaseHistory: [],
+          tasks: {},
+          agents: {},
+          checkpoints: {},
+          pendingHumanActions: [],
+        };
+      }
+      updater(state);
+      await this.saveInternal(state);
+    });
+  }
+
   // Internal methods (must be called within mutex)
 
   private async loadInternal(): Promise<WorkflowState | null> {

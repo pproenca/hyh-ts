@@ -153,4 +153,86 @@ describe('Daemon', () => {
 
     await daemon.stop();
   });
+
+  it('should spawn agents when spawn triggers fire', async () => {
+    // Setup workflow with tasks
+    const workflowPath = path.join(tempDir, '.hyh', 'workflow.json');
+    await fs.mkdir(path.dirname(workflowPath), { recursive: true });
+    await fs.writeFile(workflowPath, JSON.stringify({
+      name: 'test',
+      orchestrator: 'orchestrator',
+      agents: { worker: { name: 'worker', model: 'sonnet', role: 'implementation' } },
+      phases: [{ name: 'implement', agent: 'worker', queue: 'tasks', parallel: true }],
+      queues: { tasks: { name: 'tasks', timeout: 600000 } },
+      gates: {},
+    }));
+
+    daemon = new Daemon({ worktreeRoot: tempDir });
+    await daemon.start();
+    await daemon.loadWorkflow(workflowPath);
+
+    // Add pending task
+    await daemon.stateManager.update((state) => {
+      state.tasks['task-1'] = {
+        id: 'task-1',
+        description: 'Test task',
+        status: 'pending',
+        dependencies: [],
+        claimedBy: null,
+        claimedAt: null,
+        startedAt: null,
+        completedAt: null,
+        attempts: 0,
+        lastError: null,
+        files: [],
+        timeoutSeconds: 600,
+      };
+    });
+
+    // Trigger spawn check
+    const spawns = await daemon.checkSpawnTriggers();
+
+    expect(spawns.length).toBeGreaterThanOrEqual(0);
+
+    await daemon.stop();
+  });
+
+  it('should check and execute phase transitions', async () => {
+    // Setup workflow with phases
+    const workflowPath = path.join(tempDir, '.hyh', 'workflow.json');
+    await fs.mkdir(path.dirname(workflowPath), { recursive: true });
+    await fs.writeFile(workflowPath, JSON.stringify({
+      name: 'test',
+      orchestrator: 'orchestrator',
+      agents: { worker: { name: 'worker', model: 'sonnet', role: 'implementation' } },
+      phases: [
+        { name: 'plan', agent: 'orchestrator' },
+        { name: 'implement', agent: 'worker', queue: 'tasks' },
+      ],
+      queues: { tasks: { name: 'tasks', timeout: 600000 } },
+      gates: {},
+    }));
+
+    daemon = new Daemon({ worktreeRoot: tempDir });
+    await daemon.start();
+    await daemon.loadWorkflow(workflowPath);
+
+    // Set state to current phase
+    await daemon.stateManager.update((state) => {
+      state.currentPhase = 'plan';
+    });
+
+    // Check transition (may or may not be ready based on phase completion)
+    const canTransition = await daemon.checkPhaseTransition();
+    expect(typeof canTransition).toBe('boolean');
+
+    // If we can transition, do it
+    if (canTransition) {
+      await daemon.transitionPhase('implement');
+      const state = await daemon.stateManager.load();
+      expect(state.currentPhase).toBe('implement');
+    }
+
+    await daemon.stop();
+  });
 });

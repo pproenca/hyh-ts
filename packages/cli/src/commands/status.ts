@@ -9,12 +9,19 @@ export function registerStatusCommand(program: Command): void {
     .description('Show workflow status')
     .option('-q, --quiet', 'Minimal output')
     .option('-n, --events <count>', 'Number of recent events to show', '10')
+    .option('--tui', 'Show TUI dashboard instead of text output', false)
     .action(async (options) => {
       const socketPath = await findSocketPath();
       if (!socketPath) {
         if (!options.quiet) {
           console.log('No active workflow');
         }
+        return;
+      }
+
+      if (options.tui) {
+        const { startTUI } = await import('@hyh/tui');
+        startTUI(socketPath);
         return;
       }
 

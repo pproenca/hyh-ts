@@ -1,6 +1,6 @@
 // packages/daemon/src/core/event-loop.test.ts
 import { describe, it, expect, vi } from 'vitest';
-import { EventLoop } from './event-loop.js';
+import { EventLoop, type Daemon } from './event-loop.js';
 
 describe('EventLoop', () => {
   it('should call daemon.spawnAgents when spawn triggers fire', async () => {
@@ -53,5 +53,25 @@ describe('EventLoop', () => {
     loop.stop();
 
     expect(counter).toBeGreaterThan(0);
+  });
+
+  it('should poll agent events and process them', async () => {
+    const mockDaemon = {
+      checkSpawnTriggers: vi.fn().mockResolvedValue([]),
+      spawnAgents: vi.fn(),
+      checkPhaseTransition: vi.fn().mockResolvedValue(false),
+      stateManager: { flush: vi.fn() },
+      heartbeatMonitor: { getOverdueAgents: vi.fn().mockReturnValue([]) },
+      getActiveAgents: vi.fn().mockReturnValue([{
+        id: 'agent-1',
+        pollEvents: vi.fn().mockReturnValue([{ type: 'tool_use', tool: 'Read' }]),
+      }]),
+      processAgentEvent: vi.fn().mockResolvedValue({}),
+    };
+
+    const loop = new EventLoop(mockDaemon as unknown as Daemon, { tickInterval: 100 });
+    await loop.tick();
+
+    expect(mockDaemon.processAgentEvent).toHaveBeenCalled();
   });
 });

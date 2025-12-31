@@ -6,6 +6,8 @@ export interface Daemon {
   checkPhaseTransition(): Promise<boolean>;
   stateManager: { flush(): void };
   heartbeatMonitor: { getOverdueAgents(): unknown[] };
+  getActiveAgents?(): { id: string; pollEvents(): unknown[] }[];
+  processAgentEvent?(agentId: string, event: unknown): Promise<unknown>;
 }
 
 export interface SpawnTrigger {
@@ -45,6 +47,17 @@ export class EventLoop {
   async tick(): Promise<void> {
     if (!this.daemon) {
       throw new Error('tick() requires daemon to be provided');
+    }
+
+    // 0. Poll active agents for events
+    if (this.daemon.getActiveAgents && this.daemon.processAgentEvent) {
+      const agents = this.daemon.getActiveAgents();
+      for (const agent of agents) {
+        const events = agent.pollEvents();
+        for (const event of events) {
+          await this.daemon.processAgentEvent(agent.id, event);
+        }
+      }
     }
 
     // 1. Check spawn triggers and spawn agents

@@ -63,4 +63,27 @@ describe('Daemon', () => {
 
     client.end();
   });
+
+  it('handles heartbeat request', async () => {
+    daemon = new Daemon({ worktreeRoot: tempDir });
+    await daemon.start();
+
+    const socketPath = daemon.getSocketPath();
+    const client = net.createConnection(socketPath);
+    await new Promise<void>((resolve) => client.once('connect', resolve));
+
+    const workerId = 'test-worker-123';
+    client.write(JSON.stringify({ command: 'heartbeat', workerId }) + '\n');
+
+    const response = await new Promise<string>((resolve) => {
+      client.once('data', (data) => resolve(data.toString()));
+    });
+
+    const parsed = JSON.parse(response.trim());
+    expect(parsed.status).toBe('ok');
+    expect(parsed.data.ok).toBe(true);
+    expect(typeof parsed.data.timestamp).toBe('number');
+
+    client.end();
+  });
 });

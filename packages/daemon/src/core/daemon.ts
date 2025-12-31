@@ -172,6 +172,20 @@ export class Daemon {
       return { message: 'Workflow state cleared' };
     });
 
+    // Heartbeat
+    this.ipcServer.registerHandler('heartbeat', async (request: unknown) => {
+      const req = request as { workerId: string };
+
+      // Record heartbeat in trajectory
+      await this.trajectory.log({
+        type: 'heartbeat',
+        timestamp: Date.now(),
+        agentId: req.workerId,
+      });
+
+      return { ok: true, timestamp: Date.now() };
+    });
+
     // Shutdown
     this.ipcServer.registerHandler('shutdown', async () => {
       // Schedule shutdown

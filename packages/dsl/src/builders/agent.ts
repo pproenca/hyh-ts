@@ -83,7 +83,7 @@ export class AgentBuilder {
   }
 
   build(): CompiledAgent {
-    return {
+    const result: CompiledAgent = {
       name: this._name,
       model: this._model,
       role: this._role,
@@ -91,8 +91,11 @@ export class AgentBuilder {
       spawns: this._spawns,
       invariants: this._invariants,
       violations: this._violations,
-      heartbeat: this._heartbeat,
     };
+    if (this._heartbeat) {
+      result.heartbeat = this._heartbeat;
+    }
+    return result;
   }
 }
 

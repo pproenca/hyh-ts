@@ -333,4 +333,43 @@ describe('Daemon', () => {
 
     await daemon.stop();
   });
+
+  it('should save artifact when task completes', async () => {
+    daemon = new Daemon({ worktreeRoot: tempDir });
+    await daemon.start();
+
+    // Set up a running task
+    await daemon.stateManager.update((state) => {
+      state.tasks['task-1'] = {
+        id: 'task-1',
+        description: 'Implement token service',
+        status: 'running',
+        dependencies: [],
+        claimedBy: 'worker-1',
+        claimedAt: Date.now(),
+        startedAt: Date.now(),
+        completedAt: null,
+        attempts: 1,
+        lastError: null,
+        files: [],
+        timeoutSeconds: 600,
+      };
+    });
+
+    // Complete the task with artifact
+    await daemon.completeTask('task-1', 'worker-1', {
+      summary: 'Implemented token service',
+      files: { created: [], modified: ['src/auth/token.ts'] },
+      exports: ['generateToken'],
+    });
+
+    // Check artifact was saved
+    const artifact = await daemon.getArtifact('task-1');
+    expect(artifact).toBeDefined();
+    expect(artifact!.summary).toContain('token service');
+    expect(artifact!.files.modified).toContain('src/auth/token.ts');
+    expect(artifact!.exports).toContain('generateToken');
+
+    await daemon.stop();
+  });
 });

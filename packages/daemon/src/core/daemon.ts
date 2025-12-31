@@ -14,6 +14,7 @@ import { SpawnTriggerManager, type SpawnSpec } from '../workflow/spawn-trigger.j
 import { PhaseManager } from '../workflow/phase-manager.js';
 import { HeartbeatMonitor, type HeartbeatStatus } from '../agents/heartbeat.js';
 import { GateExecutor, type GateResult } from '../workflow/gate-executor.js';
+import { ArtifactManager, type Artifact } from '../managers/artifact.js';
 import type { CompiledWorkflow, CompiledPhase, CompiledQueue } from '@hyh/dsl';
 
 interface DaemonOptions {
@@ -43,6 +44,7 @@ export class Daemon {
   readonly stateManager: StateManager;
   private readonly trajectory: TrajectoryLogger;
   private readonly ipcServer: IPCServer;
+  private readonly artifactManager: ArtifactManager;
   private running: boolean = false;
   private checkerChain: CheckerChain | null = null;
   private trajectoryHistory: TrajectoryEvent[] = [];
@@ -66,6 +68,9 @@ export class Daemon {
     this.stateManager = new StateManager(this.worktreeRoot);
     this.trajectory = new TrajectoryLogger(path.join(this.worktreeRoot, '.hyh', 'trajectory.jsonl'));
     this.ipcServer = new IPCServer(this.socketPath);
+    this.artifactManager = new ArtifactManager(
+      path.join(this.worktreeRoot, '.hyh', 'artifacts')
+    );
 
     // Register handlers
     this.registerHandlers();
@@ -108,6 +113,37 @@ export class Daemon {
         }
       },
     });
+  }
+
+  async completeTask(
+    taskId: string,
+    workerId: string,
+    artifact?: Partial<Artifact>
+  ): Promise<void> {
+    await this.stateManager.completeTask(taskId, workerId);
+
+    if (artifact) {
+      await this.artifactManager.save({
+        taskId,
+        status: 'complete',
+        summary: artifact.summary || '',
+        files: artifact.files || { created: [], modified: [] },
+        exports: artifact.exports || [],
+        tests: artifact.tests || { passed: 0, failed: 0, command: '' },
+        notes: artifact.notes || '',
+      });
+    }
+
+    await this.trajectory.log({
+      type: 'task_complete',
+      timestamp: Date.now(),
+      agentId: workerId,
+      taskId,
+    });
+  }
+
+  async getArtifact(taskId: string): Promise<Artifact | null> {
+    return this.artifactManager.load(taskId);
   }
 
   async processAgentEvent(

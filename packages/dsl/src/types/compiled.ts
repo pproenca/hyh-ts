@@ -82,6 +82,7 @@ export interface CompiledPhase {
   gate?: string;
   then?: string;
   checkpoint?: Checkpoint;
+  contextBudget?: number;
 }
 
 // Compiled queue
@@ -99,6 +100,28 @@ export interface CompiledGate {
   onFailFinal?: Correction;
 }
 
+// Scaling configuration for workflow complexity
+export interface ScalingTier {
+  maxHours?: number;
+  maxDays?: number;
+  agents: number;
+}
+
+export interface ScalingConfig {
+  trivial?: ScalingTier;
+  small?: ScalingTier;
+  medium?: ScalingTier;
+  large?: ScalingTier;
+  huge?: ScalingTier;
+}
+
+// Pre-compact configuration for context management
+export interface PreCompactConfig {
+  preserve?: string[];
+  summarize?: string[];
+  discard?: string[];
+}
+
 // Compiled workflow (full structure)
 export interface CompiledWorkflow {
   name: string;
@@ -108,4 +131,6 @@ export interface CompiledWorkflow {
   phases: CompiledPhase[];
   queues: Record<string, CompiledQueue>;
   gates: Record<string, CompiledGate>;
+  scaling?: ScalingConfig;
+  preCompact?: PreCompactConfig;
 }

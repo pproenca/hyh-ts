@@ -38,7 +38,7 @@ export function Trajectory({ state }: TrajectoryProps) {
             <Text key={i}>
               <Text dimColor>{time}</Text>
               <Text color="yellow"> [{event.type}]</Text>
-              <Text color="cyan"> {event.agentId}</Text>
+              {'agentId' in event && <Text color="cyan"> {event.agentId}</Text>}
               {'tool' in event && <Text> {event.tool}</Text>}
             </Text>
           );

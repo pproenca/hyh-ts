@@ -1,4 +1,4 @@
-// packages/cli/src/commands/logs.ts - replace entire file
+// packages/cli/src/commands/logs.ts
 import { Command } from 'commander';
 import { IPCClient } from '../ipc/client.js';
 import { findSocketPath } from '../utils/socket.js';
@@ -38,7 +38,7 @@ export function registerLogsCommand(program: Command): void {
           const logs = (response.data as { logs: LogEntry[] }).logs;
           for (const log of logs) {
             const time = new Date(log.timestamp).toLocaleTimeString();
-            console.log(`${time} [${log.agentId}] ${log.type}`);
+            console.log(`${time} [${log.agentId}] [${log.type}] ${log.message}`);
           }
         } else {
           console.error('Failed to fetch logs:', response.message);

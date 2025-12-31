@@ -30,18 +30,26 @@ export class HeartbeatMonitor {
     if (agent) {
       agent.lastHeartbeat = Date.now();
       agent.missCount = 0;
+    } else {
+      // Auto-register with placeholder interval (will be provided at check time)
+      this.agents.set(agentId, {
+        interval: 0,
+        lastHeartbeat: Date.now(),
+        missCount: 0,
+      });
     }
   }
 
-  check(agentId: string): HeartbeatStatus {
+  check(agentId: string, interval?: number): HeartbeatStatus {
     const agent = this.agents.get(agentId);
     if (!agent) {
       return { status: 'ok' };
     }
 
     const elapsed = Date.now() - agent.lastHeartbeat;
+    const effectiveInterval = interval ?? agent.interval;
 
-    if (elapsed < agent.interval) {
+    if (elapsed < effectiveInterval) {
       return { status: 'ok' };
     }
 

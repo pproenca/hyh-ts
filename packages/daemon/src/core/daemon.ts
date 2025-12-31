@@ -12,6 +12,7 @@ import { CorrectionApplicator, type Correction } from '../corrections/applicator
 import type { Violation, TrajectoryEvent } from '../checkers/types.js';
 import { SpawnTriggerManager, type SpawnSpec } from '../workflow/spawn-trigger.js';
 import { PhaseManager } from '../workflow/phase-manager.js';
+import { HeartbeatMonitor, type HeartbeatStatus } from '../agents/heartbeat.js';
 import type { CompiledWorkflow, CompiledPhase, CompiledQueue } from '@hyh/dsl';
 
 interface DaemonOptions {
@@ -42,6 +43,7 @@ export class Daemon {
   private workflow: CompiledWorkflow | null = null;
   private spawnTriggerManager: SpawnTriggerManager | null = null;
   private phaseManager: PhaseManager | null = null;
+  private readonly heartbeatMonitor: HeartbeatMonitor = new HeartbeatMonitor();
 
   constructor(options: DaemonOptions) {
     this.worktreeRoot = options.worktreeRoot;
@@ -76,6 +78,14 @@ export class Daemon {
 
   loadCheckerChain(checkerChain: CheckerChain): void {
     this.checkerChain = checkerChain;
+  }
+
+  recordHeartbeat(agentId: string): void {
+    this.heartbeatMonitor.recordHeartbeat(agentId);
+  }
+
+  checkHeartbeat(agentId: string, interval: number): HeartbeatStatus {
+    return this.heartbeatMonitor.check(agentId, interval);
   }
 
   setAgent(agentId: string, agent: Agent): void {

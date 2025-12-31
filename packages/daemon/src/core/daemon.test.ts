@@ -197,6 +197,29 @@ describe('Daemon', () => {
     await daemon.stop();
   });
 
+  it('should monitor agent heartbeats and detect misses', async () => {
+    daemon = new Daemon({ worktreeRoot: tempDir });
+    await daemon.start();
+
+    // Register heartbeat for agent
+    daemon.recordHeartbeat('worker-1');
+
+    // Check immediately - should be ok
+    const status1 = daemon.checkHeartbeat('worker-1', 30000);
+    expect(status1.status).toBe('ok');
+
+    // Advance time past interval
+    vi.useFakeTimers();
+    vi.advanceTimersByTime(35000);
+
+    const status2 = daemon.checkHeartbeat('worker-1', 30000);
+    expect(status2.status).toBe('miss');
+    expect(status2.count).toBe(1);
+
+    vi.useRealTimers();
+    await daemon.stop();
+  });
+
   it('should check and execute phase transitions', async () => {
     // Setup workflow with phases
     const workflowPath = path.join(tempDir, '.hyh', 'workflow.json');

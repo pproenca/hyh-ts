@@ -2,6 +2,7 @@
 import { describe, it, expect } from 'vitest';
 import { CheckerChain } from './chain.js';
 import { Checker, Violation } from './types.js';
+import type { CompiledWorkflow } from '@hyh/dsl';
 
 describe('CheckerChain', () => {
   it('runs checkers and returns first violation', () => {
@@ -84,5 +85,46 @@ describe('CheckerChain', () => {
 
     expect(result).not.toBeNull();
     expect(result!.type).toBe('dynamic_violation');
+  });
+});
+
+describe('CheckerChain with new checkers', () => {
+  it('builds chain from workflow with all invariant types', () => {
+    const workflow: CompiledWorkflow = {
+      name: 'test',
+      resumable: false,
+      orchestrator: 'orchestrator',
+      agents: {
+        worker: {
+          name: 'worker',
+          model: 'sonnet',
+          role: 'implementation',
+          tools: ['Read', 'Write'],
+          invariants: [
+            { type: 'tdd', options: { test: '**/*.test.ts', impl: 'src/**/*.ts' } },
+            { type: 'fileScope', options: { getter: '["src/auth.ts"]' } },
+            { type: 'externalTodo', options: { file: 'todo.md', checkBeforeStop: true } },
+            { type: 'contextLimit', options: { max: 0.8, warn: 0.6 } },
+          ],
+          spawns: [],
+          violations: {},
+          systemPrompt: '',
+        },
+      },
+      phases: [{
+        name: 'implement',
+        agent: 'worker',
+        expects: ['Read', 'Write'],
+        forbids: ['Bash'],
+        outputs: [],
+        requires: [],
+        parallel: false,
+      }],
+      queues: {},
+      gates: {},
+    };
+
+    const chain = CheckerChain.fromWorkflow(workflow);
+    expect(chain.checkerCount).toBeGreaterThanOrEqual(5); // tdd, fileScope, todo, context, phase
   });
 });

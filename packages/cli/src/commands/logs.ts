@@ -1,4 +1,4 @@
-// packages/cli/src/commands/logs.ts
+// packages/cli/src/commands/logs.ts - replace entire file
 import { Command } from 'commander';
 import { IPCClient } from '../ipc/client.js';
 import { findSocketPath } from '../utils/socket.js';
@@ -6,69 +6,51 @@ import { findSocketPath } from '../utils/socket.js';
 interface LogEntry {
   timestamp: number;
   agentId: string;
+  type: string;
   message: string;
-}
-
-interface LogsResponse {
-  logs?: LogEntry[];
-}
-
-// Extended client interface for future log streaming support
-interface ExtendedIPCClient extends IPCClient {
-  on?(event: string, callback: (log: LogEntry) => void): void;
 }
 
 export function registerLogsCommand(program: Command): void {
   program
     .command('logs')
-    .description('Stream workflow logs')
-    .option('-n, --lines <n>', 'Number of lines', '20')
-    .option('-f, --follow', 'Follow log output')
-    .option('--agent <id>', 'Filter by agent ID')
-    .action(async (options: { lines: string; follow?: boolean; agent?: string }) => {
+    .description('View workflow execution logs')
+    .option('-n, --lines <count>', 'Number of log lines to show', '20')
+    .option('-a, --agent <id>', 'Filter logs by agent ID')
+    .option('-f, --follow', 'Follow log output (not implemented)')
+    .action(async (options) => {
       const socketPath = await findSocketPath();
       if (!socketPath) {
-        console.error('No active workflow');
+        console.error('No active workflow found. Start one with `hyh run`.');
         process.exit(1);
       }
 
-      const client: ExtendedIPCClient = new IPCClient(socketPath);
-
+      const client = new IPCClient(socketPath);
       try {
         await client.connect();
-        // Cast to unknown then to the expected shape since get_logs command
-        // will be added in a future daemon update
+
         const response = await client.request({
           command: 'get_logs',
-          limit: parseInt(options.lines),
+          limit: parseInt(options.lines, 10),
           agentId: options.agent,
         } as unknown as Parameters<typeof client.request>[0]);
 
         if (response.status === 'ok') {
-          const data = response.data as LogsResponse | undefined;
-          const logs = data?.logs ?? [];
+          const logs = (response.data as { logs: LogEntry[] }).logs;
           for (const log of logs) {
             const time = new Date(log.timestamp).toLocaleTimeString();
-            console.log(`${time} [${log.agentId}] ${log.message}`);
-          }
-
-          if (options.follow && client.on) {
-            console.log('Following logs... (Ctrl+C to exit)');
-            // Subscribe to log events
-            client.on('log', (log: LogEntry) => {
-              const time = new Date(log.timestamp).toLocaleTimeString();
-              console.log(`${time} [${log.agentId}] ${log.message}`);
-            });
-          } else {
-            await client.disconnect();
+            console.log(`${time} [${log.agentId}] ${log.type}`);
           }
         } else {
-          console.error('Failed to get logs:', response.status === 'error' ? response.message : 'Unknown error');
-          process.exit(1);
+          console.error('Failed to fetch logs:', response.message);
         }
-      } catch (error) {
-        console.error('Error:', (error as Error).message);
+
+        if (options.follow) {
+          console.log('\n--follow mode not yet implemented');
+        }
+
         await client.disconnect();
+      } catch (error) {
+        console.error('Connection error:', error instanceof Error ? error.message : error);
         process.exit(1);
       }
     });

@@ -47,6 +47,7 @@ export type { ContextBudgetOptions } from './checkers/context-budget.js';
 // Corrections
 export { CorrectionApplicator } from './corrections/applicator.js';
 export type { Correction } from './corrections/applicator.js';
+export { CompactHandler } from './corrections/compact-handler.js';
 
 // Workflow
 export { WorkflowLoader } from './workflow/loader.js';

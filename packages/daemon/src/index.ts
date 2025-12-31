@@ -6,6 +6,12 @@ export { StateManager } from './state/manager.js';
 export { TrajectoryLogger } from './trajectory/logger.js';
 export { IPCServer } from './ipc/server.js';
 
+// Agent Management
+export { AgentManager } from './agents/manager.js';
+export { AgentProcess } from './agents/process.js';
+export type { AgentProcessConfig, AgentEvent } from './agents/process.js';
+export type { SpawnSpec } from './agents/manager.js';
+
 // Types - State
 export type {
   WorkflowState,

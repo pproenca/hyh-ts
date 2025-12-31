@@ -55,6 +55,12 @@ export type { ParsedTask } from './plan/importer.js';
 // Git
 export { WorktreeManager } from './git/worktree.js';
 
+// Managers
+export { ArtifactManager } from './managers/artifact.js';
+export type { Artifact } from './managers/artifact.js';
+export { ReinjectionManager } from './managers/reinjection.js';
+export type { ReinjectionOptions, ReinjectionContext } from './managers/reinjection.js';
+
 // Types - State
 export type {
   WorkflowState,

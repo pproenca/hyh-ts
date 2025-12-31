@@ -9,8 +9,18 @@ export { IPCServer } from './ipc/server.js';
 // Agent Management
 export { AgentManager } from './agents/manager.js';
 export { AgentProcess } from './agents/process.js';
+export { HeartbeatMonitor } from './agents/heartbeat.js';
 export type { AgentProcessConfig, AgentEvent } from './agents/process.js';
 export type { SpawnSpec } from './agents/manager.js';
+export type { HeartbeatStatus } from './agents/heartbeat.js';
+
+// Checkers
+export { CheckerChain } from './checkers/chain.js';
+export { TddChecker } from './checkers/tdd.js';
+export { FileScopeChecker } from './checkers/file-scope.js';
+export type { Checker, Violation, CheckContext } from './checkers/types.js';
+export type { TddCheckerOptions } from './checkers/tdd.js';
+export type { FileScopeCheckerOptions } from './checkers/file-scope.js';
 
 // Types - State
 export type {

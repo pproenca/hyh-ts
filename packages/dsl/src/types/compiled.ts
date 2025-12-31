@@ -1,0 +1,100 @@
+// packages/dsl/src/types/compiled.ts
+import { z } from 'zod';
+import { Model, TaskStatus, GlobPattern, ToolSpec } from './primitives.js';
+
+// Correction types
+export const CorrectionTypeSchema = z.enum([
+  'prompt',
+  'warn',
+  'block',
+  'restart',
+  'reassign',
+  'retry',
+  'escalate',
+  'compact',
+]);
+export type CorrectionType = z.infer<typeof CorrectionTypeSchema>;
+
+export interface Correction {
+  type: CorrectionType;
+  message?: string;
+  to?: 'orchestrator' | 'human';
+  max?: number;
+  backoff?: number;
+  preserveTypes?: string[];
+  then?: Correction;
+}
+
+// Checkpoint types
+export interface Checkpoint {
+  id: string;
+  type: 'approval';
+  question?: string;
+  timeout?: number;
+  onTimeout?: 'abort' | 'continue' | 'escalate';
+}
+
+// Compiled invariant
+export interface CompiledInvariant {
+  type: string;
+  agentName?: string;
+  options?: Record<string, unknown>;
+}
+
+// Compiled agent
+export interface CompiledAgent {
+  name: string;
+  model: Model;
+  role: string;
+  tools: ToolSpec[];
+  spawns: string[];
+  invariants: CompiledInvariant[];
+  violations: Record<string, Correction[]>;
+  heartbeat?: {
+    interval: number;
+    corrections: Array<{ count: number; correction: Correction }>;
+  };
+  systemPrompt?: string;
+}
+
+// Compiled phase
+export interface CompiledPhase {
+  name: string;
+  agent: string;
+  queue?: string;
+  expects: string[];
+  forbids: string[];
+  requires: string[];
+  outputs: string[];
+  populates?: string;
+  parallel: boolean | number;
+  gate?: string;
+  then?: string;
+  checkpoint?: Checkpoint;
+}
+
+// Compiled queue
+export interface CompiledQueue {
+  name: string;
+  readyPredicate: string;
+  timeout: number;
+}
+
+// Compiled gate
+export interface CompiledGate {
+  name: string;
+  requires: string[];
+  onFail?: Correction;
+  onFailFinal?: Correction;
+}
+
+// Compiled workflow (full structure)
+export interface CompiledWorkflow {
+  name: string;
+  resumable: boolean;
+  orchestrator: string;
+  agents: Record<string, CompiledAgent>;
+  phases: CompiledPhase[];
+  queues: Record<string, CompiledQueue>;
+  gates: Record<string, CompiledGate>;
+}

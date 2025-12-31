@@ -57,3 +57,34 @@ describe('compileToDir', () => {
     await fs.rm(tmpDir, { recursive: true });
   });
 });
+
+describe('compileToDir with all artifacts', () => {
+  it('writes workflow.json, agent prompts, and hooks.json', async () => {
+    const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'hyh-test-'));
+
+    const orchestrator = agent('orchestrator').model('opus').role('coordinator');
+    const worker = agent('worker').model('sonnet').role('implementation');
+
+    const wf = workflow('test')
+      .orchestrator(orchestrator)
+      .phase('plan').agent(orchestrator)
+      .phase('impl').agent(worker)
+      .build();
+
+    // Register worker agent
+    wf.agents['worker'] = worker.build();
+
+    await compileToDir(wf, tmpDir);
+
+    // Check all files exist
+    const files = await fs.readdir(tmpDir);
+    expect(files).toContain('workflow.json');
+    expect(files).toContain('hooks.json');
+
+    const agentsDir = await fs.readdir(path.join(tmpDir, 'agents'));
+    expect(agentsDir).toContain('orchestrator.md');
+    expect(agentsDir).toContain('worker.md');
+
+    await fs.rm(tmpDir, { recursive: true });
+  });
+});

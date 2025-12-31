@@ -2,6 +2,8 @@
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 import { CompiledWorkflow } from '../types/compiled.js';
+import { generateAgentPrompt } from './prompt-generator.js';
+import { generateHooksJson } from './hooks-generator.js';
 
 export interface CompileOptions {
   outputDir?: string;
@@ -52,8 +54,21 @@ export async function compileToDir(
 
   // Ensure output directory exists
   await fs.mkdir(outputDir, { recursive: true });
+  await fs.mkdir(path.join(outputDir, 'agents'), { recursive: true });
 
   // Write workflow.json
   const workflowPath = path.join(outputDir, 'workflow.json');
   await fs.writeFile(workflowPath, JSON.stringify(compiled, null, 2));
+
+  // Write agent prompts
+  for (const [name, agentDef] of Object.entries(compiled.agents)) {
+    const prompt = generateAgentPrompt(agentDef);
+    const promptPath = path.join(outputDir, 'agents', `${name}.md`);
+    await fs.writeFile(promptPath, prompt);
+  }
+
+  // Write hooks.json
+  const hooks = generateHooksJson(compiled);
+  const hooksPath = path.join(outputDir, 'hooks.json');
+  await fs.writeFile(hooksPath, JSON.stringify(hooks, null, 2));
 }

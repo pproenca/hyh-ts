@@ -2,11 +2,14 @@
 import * as net from 'node:net';
 import type { IPCRequest, IPCResponse } from '../types/ipc.js';
 
+export type EventCallback = (event: unknown) => void;
+
 export class IPCClient {
   private socket: net.Socket | null = null;
   private readonly socketPath: string;
   private buffer: string = '';
   private pendingResolve: ((response: IPCResponse) => void) | null = null;
+  private eventListeners: Map<string, Set<EventCallback>> = new Map();
 
   constructor(socketPath: string) {
     this.socketPath = socketPath;
@@ -25,21 +28,29 @@ export class IPCClient {
         this.buffer = lines.pop() ?? '';
 
         for (const line of lines) {
-          if (line.trim() && this.pendingResolve) {
-            const response = JSON.parse(line) as IPCResponse;
-            this.pendingResolve(response);
-            this.pendingResolve = null;
+          if (line.trim()) {
+            const message = JSON.parse(line) as IPCResponse | { type: 'event'; event: string; data: unknown };
+
+            // Check if it's an event notification
+            if ('type' in message && message.type === 'event') {
+              this.emitEvent(message.event, message.data);
+            } else if (this.pendingResolve) {
+              // It's a response to a request
+              this.pendingResolve(message as IPCResponse);
+              this.pendingResolve = null;
+            }
           }
         }
       });
     });
   }
 
-  async disconnect(): Promise<void> {
+  disconnect(): void {
     if (this.socket) {
       this.socket.destroy();
       this.socket = null;
     }
+    this.eventListeners.clear();
   }
 
   async request(req: IPCRequest): Promise<IPCResponse> {
@@ -51,5 +62,32 @@ export class IPCClient {
       this.pendingResolve = resolve;
       this.socket!.write(JSON.stringify(req) + '\n');
     });
+  }
+
+  onEvent(eventType: string, callback: EventCallback): void {
+    if (!this.eventListeners.has(eventType)) {
+      this.eventListeners.set(eventType, new Set());
+    }
+    this.eventListeners.get(eventType)!.add(callback);
+  }
+
+  offEvent(eventType: string, callback?: EventCallback): void {
+    if (!this.eventListeners.has(eventType)) {
+      return;
+    }
+    if (callback) {
+      this.eventListeners.get(eventType)!.delete(callback);
+    } else {
+      this.eventListeners.delete(eventType);
+    }
+  }
+
+  private emitEvent(eventType: string, data: unknown): void {
+    const listeners = this.eventListeners.get(eventType);
+    if (listeners) {
+      for (const callback of listeners) {
+        callback(data);
+      }
+    }
   }
 }

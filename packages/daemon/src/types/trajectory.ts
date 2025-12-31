@@ -81,6 +81,14 @@ export const TaskCompleteEventSchema = BaseEventSchema.extend({
   taskId: z.string(),
 });
 
+// Stop event (agent is about to stop)
+export const StopEventSchema = BaseEventSchema.extend({
+  type: z.literal('stop'),
+  reason: z.string().optional(),
+});
+
+export type StopEvent = z.infer<typeof StopEventSchema>;
+
 // Union of all trajectory events
 export const TrajectoryEventSchema = z.discriminatedUnion('type', [
   ToolUseEventSchema,
@@ -92,6 +100,7 @@ export const TrajectoryEventSchema = z.discriminatedUnion('type', [
   PhaseTransitionEventSchema,
   TaskClaimEventSchema,
   TaskCompleteEventSchema,
+  StopEventSchema,
 ]);
 
 export type TrajectoryEvent = z.infer<typeof TrajectoryEventSchema>;

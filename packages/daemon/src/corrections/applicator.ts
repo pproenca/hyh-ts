@@ -1,8 +1,11 @@
 // packages/daemon/src/corrections/applicator.ts
 export interface Correction {
-  type: 'prompt' | 'warn' | 'block' | 'restart' | 'reassign' | 'escalate';
+  type: 'prompt' | 'warn' | 'block' | 'restart' | 'reassign' | 'escalate' | 'retry' | 'compact';
   message?: string;
   to?: string;
+  max?: number;
+  backoff?: number;
+  preserveTypes?: string[];
 }
 
 interface ApplicatorDeps {
@@ -51,6 +54,14 @@ export class CorrectionApplicator {
 
       case 'escalate':
         return { blocked: false, message: `Escalated to ${correction.to}` };
+
+      case 'retry':
+        // Retry correction - signal that operation should be retried
+        return { blocked: false, message: `Retry requested (max: ${correction.max ?? 3}, backoff: ${correction.backoff ?? 1000}ms)` };
+
+      case 'compact':
+        // Compact correction - signal that context should be compacted
+        return { blocked: false, message: `Context compaction requested` };
 
       default:
         return { blocked: false };

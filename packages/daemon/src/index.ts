@@ -82,6 +82,7 @@ export type {
   ToolUseEvent,
   CorrectionEvent,
   SpawnEvent,
+  StopEvent,
 } from './types/trajectory.js';
 
 // Types - IPC

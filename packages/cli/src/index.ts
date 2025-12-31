@@ -12,6 +12,7 @@ import { registerHeartbeatCommand } from './commands/heartbeat.js';
 import { registerResumeCommand } from './commands/resume.js';
 import { registerLogsCommand } from './commands/logs.js';
 import { registerSimulateCommand } from './commands/simulate.js';
+import { registerMetricsCommand } from './commands/metrics.js';
 
 const program = new Command();
 
@@ -40,5 +41,6 @@ registerHeartbeatCommand(program);
 registerResumeCommand(program);
 registerLogsCommand(program);
 registerSimulateCommand(program);
+registerMetricsCommand(program);
 
 program.parse();

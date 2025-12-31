@@ -36,8 +36,6 @@ export type { Checker, Violation, CheckContext } from './checkers/types.js';
 export type { TddCheckerOptions } from './checkers/tdd.js';
 export type { FileScopeCheckerOptions } from './checkers/file-scope.js';
 export type { TodoCheckerOptions } from './checkers/todo.js';
-export { ContextBudgetChecker, estimateTokens } from './checkers/context-budget.js';
-export type { ContextBudgetOptions } from './checkers/context-budget.js';
 
 // Corrections
 export { CorrectionApplicator } from './corrections/applicator.js';

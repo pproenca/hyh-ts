@@ -32,7 +32,7 @@ interface CheckerChainLike {
  * Interface for correction applicator
  */
 interface CorrectionApplicatorLike {
-  apply(agentId: string, correction: Correction): Promise<{ blocked: boolean; message?: string }>;
+  apply(agentId: string, correction: Correction): Promise<{ blocked: boolean; message?: string | undefined }>;
 }
 
 /**

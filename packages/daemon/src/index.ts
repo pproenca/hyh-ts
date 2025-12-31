@@ -6,6 +6,23 @@ export { Daemon } from './core/daemon.js';
 export { EventLoop } from './core/event-loop.js';
 export type { EventLoopOptions } from './core/event-loop.js';
 
+// Core Services (extracted from Daemon)
+export { EventProcessor } from './core/event-processor.js';
+export type { EventProcessorDeps, ProcessEventResult } from './core/event-processor.js';
+
+export { AgentLifecycle } from './core/agent-lifecycle.js';
+export type {
+  AgentLifecycleDeps,
+  SpawnSpec as AgentLifecycleSpawnSpec,
+  Agent as AgentLifecycleAgent,
+} from './core/agent-lifecycle.js';
+
+export { WorkflowCoordinator } from './core/workflow-coordinator.js';
+export type { WorkflowCoordinatorConfig } from './core/workflow-coordinator.js';
+
+export { registerIPCHandlers } from './core/ipc-handlers.js';
+export type { IPCHandlerDeps } from './core/ipc-handlers.js';
+
 // State
 export { StateManager } from './state/manager.js';
 

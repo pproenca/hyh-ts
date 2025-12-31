@@ -1,9 +1,18 @@
 // @hyh/daemon - Workflow Runtime Engine
 // Manages agent processes, enforces invariants, persists state
 
+// Core
 export { Daemon } from './core/daemon.js';
+export { EventLoop } from './core/event-loop.js';
+export type { EventLoopOptions } from './core/event-loop.js';
+
+// State
 export { StateManager } from './state/manager.js';
+
+// Trajectory
 export { TrajectoryLogger } from './trajectory/logger.js';
+
+// IPC
 export { IPCServer } from './ipc/server.js';
 export { IPCClient } from './ipc/client.js';
 
@@ -19,6 +28,8 @@ export type { HeartbeatStatus } from './agents/heartbeat.js';
 export { CheckerChain } from './checkers/chain.js';
 export { TddChecker } from './checkers/tdd.js';
 export { FileScopeChecker } from './checkers/file-scope.js';
+export { NoCodeChecker } from './checkers/no-code.js';
+export { MustProgressChecker } from './checkers/must-progress.js';
 export type { Checker, Violation, CheckContext } from './checkers/types.js';
 export type { TddCheckerOptions } from './checkers/tdd.js';
 export type { FileScopeCheckerOptions } from './checkers/file-scope.js';
@@ -28,7 +39,18 @@ export { CorrectionApplicator } from './corrections/applicator.js';
 export type { Correction } from './corrections/applicator.js';
 
 // Workflow
+export { WorkflowLoader } from './workflow/loader.js';
 export { PhaseManager } from './workflow/phase-manager.js';
+export { SpawnTriggerManager } from './workflow/spawn-trigger.js';
+export type { SpawnSpec as WorkflowSpawnSpec } from './workflow/spawn-trigger.js';
+export { GateExecutor } from './workflow/gate-executor.js';
+
+// Plan
+export { PlanImporter } from './plan/importer.js';
+export type { ParsedTask } from './plan/importer.js';
+
+// Git
+export { WorktreeManager } from './git/worktree.js';
 
 // Types - State
 export type {

@@ -448,6 +448,18 @@ describe('Daemon', () => {
     expect(Array.isArray(activeAgents)).toBe(true);
   });
 
+  describe('Daemon with extracted services', () => {
+    it('delegates event processing to EventProcessor', async () => {
+      daemon = new Daemon({ worktreeRoot: tempDir });
+      await daemon.start();
+
+      // Verify services are wired
+      expect(daemon['eventProcessor']).toBeDefined();
+      expect(daemon['agentLifecycle']).toBeDefined();
+      expect(daemon['workflowCoordinator']).toBeDefined();
+    });
+  });
+
   describe('get_logs handler', () => {
     it('returns recent trajectory events', async () => {
       daemon = new Daemon({ worktreeRoot: tempDir });

@@ -1,23 +1,23 @@
 // packages/daemon/src/core/daemon.ts
 import * as crypto from 'node:crypto';
-import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 import * as os from 'node:os';
 import { StateManager } from '../state/manager.js';
 import { TrajectoryLogger } from '../trajectory/logger.js';
 import { IPCServer } from '../ipc/server.js';
-import { TaskStatus } from '../types/state.js';
 import { CheckerChain } from '../checkers/chain.js';
 import { CorrectionApplicator, type Correction } from '../corrections/applicator.js';
 import type { Violation, TrajectoryEvent } from '../checkers/types.js';
-import { SpawnTriggerManager, type SpawnSpec } from '../workflow/spawn-trigger.js';
+import type { SpawnSpec } from '../workflow/spawn-trigger.js';
 import { AgentManager } from '../agents/manager.js';
 import { WorktreeManager } from '../git/worktree.js';
-import { PhaseManager } from '../workflow/phase-manager.js';
 import { HeartbeatMonitor, type HeartbeatStatus } from '../agents/heartbeat.js';
-import { GateExecutor, type GateResult } from '../workflow/gate-executor.js';
+import type { GateResult } from '../workflow/gate-executor.js';
 import { ArtifactManager, type Artifact } from '../managers/artifact.js';
-import type { CompiledWorkflow } from '@hyh/dsl';
+import { EventProcessor } from './event-processor.js';
+import { AgentLifecycle } from './agent-lifecycle.js';
+import { WorkflowCoordinator } from './workflow-coordinator.js';
+import { registerIPCHandlers } from './ipc-handlers.js';
 
 interface DaemonOptions {
   worktreeRoot: string;
@@ -50,16 +50,16 @@ export class Daemon {
   private readonly artifactManager: ArtifactManager;
   private running: boolean = false;
   private checkerChain: CheckerChain | null = null;
-  private trajectoryHistory: TrajectoryEvent[] = [];
   private readonly agents: Map<string, Agent> = new Map();
   private correctionApplicator: CorrectionApplicator | null = null;
-  private workflow: CompiledWorkflow | null = null;
-  private spawnTriggerManager: SpawnTriggerManager | null = null;
-  private phaseManager: PhaseManager | null = null;
   private readonly heartbeatMonitor: HeartbeatMonitor = new HeartbeatMonitor();
-  private gateExecutor: GateExecutor | null = null;
   private readonly agentManager: AgentManager;
   private readonly worktreeManager: WorktreeManager;
+
+  // Extracted services
+  private eventProcessor: EventProcessor | null = null;
+  private readonly agentLifecycle: AgentLifecycle;
+  private readonly workflowCoordinator: WorkflowCoordinator;
 
   constructor(options: DaemonOptions) {
     this.worktreeRoot = options.worktreeRoot;
@@ -78,6 +78,28 @@ export class Daemon {
     );
     this.agentManager = new AgentManager(this.worktreeRoot);
     this.worktreeManager = new WorktreeManager(this.worktreeRoot);
+
+    // Initialize extracted services
+    this.agentLifecycle = new AgentLifecycle({
+      agentManager: this.agentManager,
+      stateManager: this.stateManager,
+      trajectory: this.trajectory,
+      heartbeatMonitor: this.heartbeatMonitor,
+    });
+
+    this.workflowCoordinator = new WorkflowCoordinator({
+      stateManager: this.stateManager,
+      trajectory: this.trajectory,
+      cwd: this.worktreeRoot,
+    });
+
+    // EventProcessor is initialized when checkerChain is loaded (needs correctionApplicator)
+    this.eventProcessor = new EventProcessor({
+      trajectory: this.trajectory,
+      stateManager: this.stateManager,
+      checkerChain: null,
+      correctionApplicator: null,
+    });
 
     // Register handlers
     this.registerHandlers();
@@ -125,9 +147,12 @@ export class Daemon {
       }
     }
 
+    // Get workflow from coordinator
+    const workflow = this.workflowCoordinator.getWorkflow();
+
     for (const spec of specs) {
       // Get agent config from workflow
-      const agentConfig = this.workflow?.agents?.[spec.agentType];
+      const agentConfig = workflow?.agents?.[spec.agentType];
       if (!agentConfig) {
         continue;
       }
@@ -168,6 +193,13 @@ export class Daemon {
 
   loadCheckerChain(checkerChain: CheckerChain): void {
     this.checkerChain = checkerChain;
+    // Reinitialize EventProcessor with the checker chain
+    this.eventProcessor = new EventProcessor({
+      trajectory: this.trajectory,
+      stateManager: this.stateManager,
+      checkerChain: this.checkerChain,
+      correctionApplicator: this.correctionApplicator,
+    });
   }
 
   recordHeartbeat(agentId: string): void {
@@ -210,6 +242,14 @@ export class Daemon {
         // For now, this is a placeholder that will be wired up later
       },
     });
+
+    // Reinitialize EventProcessor with the updated correction applicator
+    this.eventProcessor = new EventProcessor({
+      trajectory: this.trajectory,
+      stateManager: this.stateManager,
+      checkerChain: this.checkerChain,
+      correctionApplicator: this.correctionApplicator,
+    });
   }
 
   async completeTask(
@@ -247,57 +287,25 @@ export class Daemon {
     agentId: string,
     event: TrajectoryEvent
   ): Promise<ProcessEventResult> {
-    // 1. Log event to trajectory
-    await this.trajectory.log(event);
-    this.trajectoryHistory.push(event);
-
-    // 2. Check invariants via CheckerChain
-    if (this.checkerChain) {
-      const state = await this.stateManager.load();
-      const violation = this.checkerChain.check(
-        agentId,
-        event,
-        state,
-        this.trajectoryHistory
-      );
-
-      // 3. If violation, apply correction if available
-      if (violation) {
-        const correction = violation.correction;
-        if (correction && this.correctionApplicator) {
-          await this.correctionApplicator.apply(agentId, correction);
-          return { violation, correction };
-        }
-        return { violation };
-      }
+    // Delegate to EventProcessor
+    if (this.eventProcessor) {
+      return this.eventProcessor.process(agentId, event);
     }
-
     return {};
   }
 
   async loadWorkflow(workflowPath: string): Promise<void> {
-    const content = await fs.readFile(workflowPath, 'utf-8');
-    this.workflow = JSON.parse(content) as CompiledWorkflow;
+    // Load via WorkflowCoordinator (handles managers initialization)
+    await this.workflowCoordinator.load(workflowPath);
 
-    // Initialize SpawnTriggerManager
-    this.spawnTriggerManager = new SpawnTriggerManager({
-      phases: this.workflow.phases,
-      queues: this.workflow.queues,
-    });
-
-    // Initialize PhaseManager
-    this.phaseManager = new PhaseManager({
-      phases: this.workflow.phases,
-    });
-
-    // Initialize GateExecutor
-    this.gateExecutor = new GateExecutor();
+    // Also keep local reference for spawnAgents which needs workflow config
+    const workflow = this.workflowCoordinator.getWorkflow();
 
     // Initialize state with first phase if not already set
     const state = await this.stateManager.load();
-    const firstPhase = this.workflow.phases[0];
-    if (!state && firstPhase) {
-      const workflowName = this.workflow.name;
+    const firstPhase = workflow?.phases[0];
+    if (!state && firstPhase && workflow) {
+      const workflowName = workflow.name;
       const phaseName = firstPhase.name;
       await this.stateManager.update((s) => {
         s.workflowId = workflowName;
@@ -308,103 +316,23 @@ export class Daemon {
   }
 
   async executeGate(gateName: string): Promise<GateResult> {
-    if (!this.gateExecutor || !this.workflow) {
-      return { passed: false, error: 'No workflow loaded' };
+    const result = await this.workflowCoordinator.executeGate(gateName, this.worktreeRoot);
+    if (!result) {
+      return { passed: false, error: 'No workflow loaded or gate not found' };
     }
-
-    const gate = this.workflow.gates[gateName];
-    if (!gate) {
-      return { passed: false, error: `Gate ${gateName} not found` };
-    }
-
-    // Convert CompiledGate (requires: string[]) to GateConfig (checks: GateCheck[])
-    const gateConfig = {
-      name: gate.name,
-      checks: gate.requires.map((cmd) => ({
-        type: 'command' as const,
-        command: cmd,
-      })),
-    };
-
-    return this.gateExecutor.execute(gateConfig, this.worktreeRoot);
+    return result;
   }
 
   async checkSpawnTriggers(): Promise<SpawnSpec[]> {
-    if (!this.spawnTriggerManager) return [];
-
-    const state = await this.stateManager.load();
-    if (!state) return [];
-
-    // Find ready (pending) tasks
-    const readyTasks = Object.values(state.tasks)
-      .filter((t) => t.status === TaskStatus.PENDING)
-      .map((t) => t.id);
-
-    // Count active agents
-    const activeAgentCount = Object.values(state.agents).filter(
-      (a) => a.status === 'active'
-    ).length;
-
-    return this.spawnTriggerManager.checkTriggers({
-      currentPhase: state.currentPhase,
-      readyTasks,
-      activeAgentCount,
-    });
+    return this.workflowCoordinator.checkSpawnTriggers();
   }
 
   async checkPhaseTransition(): Promise<boolean> {
-    if (!this.phaseManager) return false;
-
-    const state = await this.stateManager.load();
-    if (!state) return false;
-
-    const nextPhase = this.phaseManager.getNextPhase(state.currentPhase);
-    if (!nextPhase) return false;
-
-    // Check if we can transition to next phase
-    // For now, we check if the queue for current phase is empty (all tasks completed)
-    const currentPhase = this.workflow?.phases.find((p) => p.name === state.currentPhase);
-    if (currentPhase?.queue) {
-      // Check if all tasks are completed
-      const allCompleted = Object.values(state.tasks).every(
-        (t) => t.status === TaskStatus.COMPLETED
-      );
-      if (!allCompleted) return false;
-    }
-
-    // Gather artifacts (completed task outputs would be artifacts)
-    const artifacts: string[] = [];
-
-    return this.phaseManager.canTransition(state.currentPhase, nextPhase, {
-      artifacts,
-      queueEmpty: true,
-    });
+    return this.workflowCoordinator.checkPhaseTransition();
   }
 
   async transitionPhase(targetPhase: string): Promise<void> {
-    const state = await this.stateManager.load();
-    if (!state) {
-      throw new Error('No workflow state');
-    }
-
-    const fromPhase = state.currentPhase;
-
-    await this.stateManager.update((s) => {
-      s.currentPhase = targetPhase;
-      s.phaseHistory.push({
-        from: fromPhase,
-        to: targetPhase,
-        timestamp: Date.now(),
-      });
-    });
-
-    // Log phase transition to trajectory
-    await this.trajectory.log({
-      type: 'phase_transition',
-      timestamp: Date.now(),
-      from: fromPhase,
-      to: targetPhase,
-    });
+    await this.workflowCoordinator.transitionTo(targetPhase);
   }
 
   async tick(): Promise<TickResult> {
@@ -429,8 +357,8 @@ export class Daemon {
     // 3. Check phase transitions
     if (await this.checkPhaseTransition()) {
       const state = await this.stateManager.load();
-      if (state && this.phaseManager) {
-        const nextPhase = this.phaseManager.getNextPhase(state.currentPhase);
+      if (state) {
+        const nextPhase = this.workflowCoordinator.getNextPhase(state.currentPhase);
         if (nextPhase) {
           await this.transitionPhase(nextPhase);
           result.phaseTransitioned = true;
@@ -442,77 +370,18 @@ export class Daemon {
   }
 
   private registerHandlers(): void {
-    // Ping
-    this.ipcServer.registerHandler('ping', async () => ({
-      running: true,
-      pid: process.pid,
-    }));
-
-    // Get state
-    this.ipcServer.registerHandler('get_state', async () => {
-      const state = await this.stateManager.load();
-      return { state };
+    // Register common handlers via extracted service
+    registerIPCHandlers(this.ipcServer, {
+      stateManager: this.stateManager,
+      trajectory: this.trajectory,
+      agentLifecycle: {
+        recordHeartbeat: (agentId: string) => this.agentLifecycle.recordHeartbeat(agentId),
+        getActiveAgents: () => this.getActiveAgents(),
+      },
+      stopCallback: () => this.stop(),
     });
 
-    // Status
-    this.ipcServer.registerHandler('status', async (request: unknown) => {
-      const req = request as { eventCount?: number };
-      const state = await this.stateManager.load();
-      const eventCount = req.eventCount ?? 10;
-
-      if (!state) {
-        return {
-          active: false,
-          summary: { total: 0, completed: 0, running: 0, pending: 0, failed: 0 },
-          tasks: {},
-          events: [],
-          activeWorkers: [],
-        };
-      }
-
-      const tasks = state.tasks;
-      let completed = 0,
-        running = 0,
-        pending = 0,
-        failed = 0;
-      const activeWorkers: string[] = [];
-
-      for (const task of Object.values(tasks)) {
-        switch (task.status) {
-          case TaskStatus.COMPLETED:
-            completed++;
-            break;
-          case TaskStatus.RUNNING:
-            running++;
-            if (task.claimedBy) activeWorkers.push(task.claimedBy);
-            break;
-          case TaskStatus.PENDING:
-            pending++;
-            break;
-          case TaskStatus.FAILED:
-            failed++;
-            break;
-        }
-      }
-
-      const events = await this.trajectory.tail(eventCount);
-
-      return {
-        active: true,
-        summary: {
-          total: Object.keys(tasks).length,
-          completed,
-          running,
-          pending,
-          failed,
-        },
-        tasks,
-        events,
-        activeWorkers,
-      };
-    });
-
-    // Task claim
+    // Task claim (not in ipc-handlers.ts)
     this.ipcServer.registerHandler('task_claim', async (request: unknown) => {
       const req = request as { workerId: string };
       const result = await this.stateManager.claimTask(req.workerId);
@@ -535,7 +404,7 @@ export class Daemon {
       };
     });
 
-    // Task complete
+    // Task complete (not in ipc-handlers.ts)
     this.ipcServer.registerHandler('task_complete', async (request: unknown) => {
       const req = request as { taskId: string; workerId: string; force?: boolean };
       await this.stateManager.completeTask(req.taskId, req.workerId, req.force);
@@ -550,7 +419,7 @@ export class Daemon {
       return { taskId: req.taskId };
     });
 
-    // Plan reset
+    // Plan reset (not in ipc-handlers.ts)
     this.ipcServer.registerHandler('plan_reset', async () => {
       await this.stateManager.reset();
 
@@ -560,46 +429,6 @@ export class Daemon {
       });
 
       return { message: 'Workflow state cleared' };
-    });
-
-    // Heartbeat
-    this.ipcServer.registerHandler('heartbeat', async (request: unknown) => {
-      const req = request as { workerId: string };
-
-      // Record heartbeat in trajectory
-      await this.trajectory.log({
-        type: 'heartbeat',
-        timestamp: Date.now(),
-        agentId: req.workerId,
-      });
-
-      return { ok: true, timestamp: Date.now() };
-    });
-
-    // Shutdown
-    this.ipcServer.registerHandler('shutdown', async () => {
-      // Schedule shutdown
-      setTimeout(() => this.stop(), 100);
-      return { shutdown: true };
-    });
-
-    // Get logs
-    this.ipcServer.registerHandler('get_logs', async (request: unknown) => {
-      const req = request as { limit?: number; agentId?: string };
-      const limit = req.limit ?? 20;
-
-      const events = req.agentId
-        ? await this.trajectory.filterByAgent(req.agentId, limit)
-        : await this.trajectory.tail(limit);
-
-      return {
-        logs: events.map((e) => ({
-          timestamp: e.timestamp,
-          agentId: e.agentId ?? 'system',
-          type: e.type,
-          message: JSON.stringify(e),
-        })),
-      };
     });
   }
 }

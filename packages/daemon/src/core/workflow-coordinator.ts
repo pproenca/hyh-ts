@@ -65,6 +65,16 @@ export class WorkflowCoordinator {
   }
 
   /**
+   * Get the next phase after the given phase
+   */
+  getNextPhase(currentPhase: string): string | null {
+    if (!this.phaseManager) {
+      return null;
+    }
+    return this.phaseManager.getNextPhase(currentPhase);
+  }
+
+  /**
    * Check if phase should transition based on current state
    */
   async checkPhaseTransition(): Promise<boolean> {

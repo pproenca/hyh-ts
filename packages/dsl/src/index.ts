@@ -9,6 +9,8 @@ export { task } from './builders/task.js';
 export { inv } from './invariants/index.js';
 export { correct } from './corrections/index.js';
 export { human } from './checkpoints/human.js';
+export { compile } from './compiler/index.js';
+export type { CompileOptions } from './compiler/index.js';
 
 // Types
 export type {

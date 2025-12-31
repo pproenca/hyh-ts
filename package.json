@@ -10,7 +10,8 @@
     "test:watch": "vitest",
     "typecheck": "pnpm -r typecheck",
     "lint": "eslint packages/*/src",
-    "clean": "pnpm -r clean && rm -rf node_modules"
+    "clean": "pnpm -r clean && rm -rf node_modules",
+    "hyh": "pnpm --filter @hyh/cli exec hyh"
   },
   "devDependencies": {
     "@types/node": "catalog:",

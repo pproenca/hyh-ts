@@ -30,9 +30,12 @@ export { TddChecker } from './checkers/tdd.js';
 export { FileScopeChecker } from './checkers/file-scope.js';
 export { NoCodeChecker } from './checkers/no-code.js';
 export { MustProgressChecker } from './checkers/must-progress.js';
+export { PhaseToolChecker } from './checkers/phase-tool.js';
+export { TodoChecker } from './checkers/todo.js';
 export type { Checker, Violation, CheckContext } from './checkers/types.js';
 export type { TddCheckerOptions } from './checkers/tdd.js';
 export type { FileScopeCheckerOptions } from './checkers/file-scope.js';
+export type { TodoCheckerOptions } from './checkers/todo.js';
 
 // Corrections
 export { CorrectionApplicator } from './corrections/applicator.js';

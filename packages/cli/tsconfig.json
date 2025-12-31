@@ -9,6 +9,7 @@
   "exclude": ["src/**/*.test.ts"],
   "references": [
     { "path": "../dsl" },
-    { "path": "../daemon" }
+    { "path": "../daemon" },
+    { "path": "../tui" }
   ]
 }

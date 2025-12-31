@@ -4,12 +4,39 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+catalogs:
+  default:
+    '@testing-library/react':
+      specifier: ^16.3.1
+      version: 16.3.1
+    '@types/node':
+      specifier: ^22.19.3
+      version: 22.19.3
+    '@types/react':
+      specifier: ^18.0.0
+      version: 18.3.27
+    react:
+      specifier: ^18.3.1
+      version: 18.3.1
+    react-dom:
+      specifier: ^18.3.1
+      version: 18.3.1
+    typescript:
+      specifier: ^5.9.3
+      version: 5.9.3
+    vitest:
+      specifier: ^2.1.9
+      version: 2.1.9
+    zod:
+      specifier: ^3.24.0
+      version: 3.25.76
+
 importers:
 
   .:
     devDependencies:
       '@types/node':
-        specifier: ^22.19.3
+        specifier: 'catalog:'
         version: 22.19.3
       '@typescript-eslint/eslint-plugin':
         specifier: ^8.51.0
@@ -24,10 +51,10 @@ importers:
         specifier: ^4.0.0
         version: 4.0.0(@types/react@18.3.27)
       typescript:
-        specifier: ^5.9.3
+        specifier: 'catalog:'
         version: 5.9.3
       vitest:
-        specifier: ^2.1.9
+        specifier: 'catalog:'
         version: 2.1.9(@types/node@22.19.3)(jsdom@27.4.0)
 
   packages/cli:
@@ -46,7 +73,7 @@ importers:
         version: 12.1.0
     devDependencies:
       typescript:
-        specifier: ^5.7.0
+        specifier: 'catalog:'
         version: 5.9.3
 
   packages/daemon:
@@ -64,7 +91,7 @@ importers:
         specifier: ^1.0.22
         version: 1.0.22
       zod:
-        specifier: ^3.24.0
+        specifier: 'catalog:'
         version: 3.25.76
     devDependencies:
       '@types/picomatch':
@@ -74,10 +101,10 @@ importers:
   packages/dsl:
     dependencies:
       typescript:
-        specifier: ^5.0.0
+        specifier: 'catalog:'
         version: 5.9.3
       zod:
-        specifier: ^3.24.0
+        specifier: 'catalog:'
         version: 3.25.76
 
   packages/tui:
@@ -89,14 +116,14 @@ importers:
         specifier: ^5.0.0
         version: 5.2.1(@types/react@18.3.27)(react@18.3.1)
       react:
-        specifier: ^18.3.1
+        specifier: 'catalog:'
         version: 18.3.1
     devDependencies:
       '@testing-library/react':
-        specifier: ^16.3.1
+        specifier: 'catalog:'
         version: 16.3.1(@testing-library/dom@10.4.1)(@types/react@18.3.27)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       '@types/react':
-        specifier: ^18.0.0
+        specifier: 'catalog:'
         version: 18.3.27
       ink-testing-library:
         specifier: ^4.0.0
@@ -105,7 +132,7 @@ importers:
         specifier: ^27.4.0
         version: 27.4.0
       react-dom:
-        specifier: '18'
+        specifier: 'catalog:'
         version: 18.3.1(react@18.3.1)
 
 packages:

@@ -4,7 +4,8 @@
   "type": "module",
   "packageManager": "pnpm@9.15.0",
   "scripts": {
-    "build": "pnpm -r build",
+    "prepare": "pnpm -r --workspace-concurrency=1 build",
+    "build": "pnpm -r --workspace-concurrency=1 build",
     "test": "vitest run",
     "test:watch": "vitest",
     "typecheck": "pnpm -r typecheck",
@@ -12,12 +13,12 @@
     "clean": "pnpm -r clean && rm -rf node_modules"
   },
   "devDependencies": {
-    "@types/node": "^22.19.3",
+    "@types/node": "catalog:",
     "@typescript-eslint/eslint-plugin": "^8.51.0",
     "@typescript-eslint/parser": "^8.51.0",
     "eslint": "^9.39.2",
     "ink-testing-library": "^4.0.0",
-    "typescript": "^5.9.3",
-    "vitest": "^2.1.9"
+    "typescript": "catalog:",
+    "vitest": "catalog:"
   }
 }

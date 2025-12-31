@@ -1,2 +1,20 @@
 packages:
   - 'packages/*'
+
+# Centralize shared dependency versions (pnpm 8.15+)
+catalog:
+  # Shared runtime deps
+  zod: ^3.24.0
+
+  # Build tooling
+  typescript: ^5.9.3
+  '@types/node': ^22.19.3
+
+  # Testing
+  vitest: ^2.1.9
+
+  # React ecosystem (tui)
+  react: ^18.3.1
+  '@types/react': ^18.0.0
+  react-dom: ^18.3.1
+  '@testing-library/react': ^16.3.1

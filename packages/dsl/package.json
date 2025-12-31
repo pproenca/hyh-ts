@@ -13,12 +13,12 @@
   "scripts": {
     "build": "tsc",
     "typecheck": "tsc --noEmit",
-    "clean": "rm -rf dist"
+    "clean": "rm -rf dist *.tsbuildinfo"
   },
   "dependencies": {
-    "zod": "^3.24.0"
+    "zod": "catalog:"
   },
   "peerDependencies": {
-    "typescript": "^5.0.0"
+    "typescript": "catalog:"
   }
 }

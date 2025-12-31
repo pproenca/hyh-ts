@@ -13,6 +13,7 @@ import type { Violation, TrajectoryEvent } from '../checkers/types.js';
 import { SpawnTriggerManager, type SpawnSpec } from '../workflow/spawn-trigger.js';
 import { PhaseManager } from '../workflow/phase-manager.js';
 import { HeartbeatMonitor, type HeartbeatStatus } from '../agents/heartbeat.js';
+import { GateExecutor, type GateResult } from '../workflow/gate-executor.js';
 import type { CompiledWorkflow, CompiledPhase, CompiledQueue } from '@hyh/dsl';
 
 interface DaemonOptions {
@@ -51,6 +52,7 @@ export class Daemon {
   private spawnTriggerManager: SpawnTriggerManager | null = null;
   private phaseManager: PhaseManager | null = null;
   private readonly heartbeatMonitor: HeartbeatMonitor = new HeartbeatMonitor();
+  private gateExecutor: GateExecutor | null = null;
 
   constructor(options: DaemonOptions) {
     this.worktreeRoot = options.worktreeRoot;
@@ -155,6 +157,9 @@ export class Daemon {
       phases: this.workflow.phases,
     });
 
+    // Initialize GateExecutor
+    this.gateExecutor = new GateExecutor();
+
     // Initialize state with first phase if not already set
     const state = await this.stateManager.load();
     const firstPhase = this.workflow.phases[0];
@@ -167,6 +172,28 @@ export class Daemon {
         s.currentPhase = phaseName;
       });
     }
+  }
+
+  async executeGate(gateName: string): Promise<GateResult> {
+    if (!this.gateExecutor || !this.workflow) {
+      return { passed: false, error: 'No workflow loaded' };
+    }
+
+    const gate = this.workflow.gates[gateName];
+    if (!gate) {
+      return { passed: false, error: `Gate ${gateName} not found` };
+    }
+
+    // Convert CompiledGate (requires: string[]) to GateConfig (checks: GateCheck[])
+    const gateConfig = {
+      name: gate.name,
+      checks: gate.requires.map((cmd) => ({
+        type: 'command' as const,
+        command: cmd,
+      })),
+    };
+
+    return this.gateExecutor.execute(gateConfig, this.worktreeRoot);
   }
 
   async checkSpawnTriggers(): Promise<SpawnSpec[]> {

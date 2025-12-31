@@ -302,4 +302,35 @@ describe('Daemon', () => {
 
     await daemon.stop();
   });
+
+  it('should execute quality gate before phase transition', async () => {
+    daemon = new Daemon({ worktreeRoot: tempDir });
+    await daemon.start();
+
+    // Workflow with gate
+    const workflowPath = path.join(tempDir, '.hyh', 'workflow.json');
+    await fs.mkdir(path.dirname(workflowPath), { recursive: true });
+    await fs.writeFile(workflowPath, JSON.stringify({
+      name: 'test',
+      orchestrator: 'orchestrator',
+      agents: {},
+      phases: [],
+      queues: {},
+      gates: {
+        quality: {
+          name: 'quality',
+          requires: ['npm test'],
+        },
+      },
+    }));
+
+    await daemon.loadWorkflow(workflowPath);
+
+    // Execute gate
+    const gateResult = await daemon.executeGate('quality');
+
+    expect(gateResult.passed).toBeDefined();
+
+    await daemon.stop();
+  });
 });

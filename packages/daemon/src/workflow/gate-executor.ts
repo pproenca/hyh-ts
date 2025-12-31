@@ -4,18 +4,18 @@ import { promisify } from 'node:util';
 
 const execAsync = promisify(exec);
 
-interface GateCheck {
+export interface GateCheck {
   type: 'command' | 'verifier';
   command?: string;
   verifier?: string;
 }
 
-interface GateConfig {
+export interface GateConfig {
   name: string;
   checks: GateCheck[];
 }
 
-interface GateResult {
+export interface GateResult {
   passed: boolean;
   failedCheck?: GateCheck;
   error?: string;

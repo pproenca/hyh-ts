@@ -1,22 +1,30 @@
 // packages/daemon/src/corrections/applicator.ts
-export interface Correction {
-  type: 'prompt' | 'warn' | 'block' | 'restart' | 'reassign' | 'escalate' | 'retry' | 'compact';
-  message?: string;
-  to?: string;
-  max?: number;
-  backoff?: number;
-  preserveTypes?: string[];
+import type { Correction } from '@hyh/dsl';
+
+export type { Correction };
+
+export interface CompactOptions {
+  keepLastN?: number | undefined;
+  summarize?: boolean | undefined;
 }
 
-interface ApplicatorDeps {
+export interface ApplicatorDeps {
   injectPrompt: (agentId: string, message: string) => Promise<void>;
-  killAgent?: (agentId: string) => Promise<void>;
-  reassignTask?: (agentId: string) => Promise<void>;
+  killAgent: (agentId: string) => Promise<void>;
+  respawnAgent: (agentId: string) => Promise<void>;
+  reassignTask: (agentId: string) => Promise<void>;
+  compactContext: (agentId: string, options: CompactOptions) => Promise<void>;
 }
 
 interface ApplyResult {
   blocked: boolean;
   message?: string | undefined;
+}
+
+// Extended correction type with compact-specific options
+interface CorrectionWithCompactOptions extends Correction {
+  keepLastN?: number;
+  summarize?: boolean;
 }
 
 export class CorrectionApplicator {
@@ -26,7 +34,7 @@ export class CorrectionApplicator {
     this.deps = deps;
   }
 
-  async apply(agentId: string, correction: Correction): Promise<ApplyResult> {
+  async apply(agentId: string, correction: CorrectionWithCompactOptions): Promise<ApplyResult> {
     switch (correction.type) {
       case 'prompt':
         await this.deps.injectPrompt(agentId, `<correction>\n${correction.message}\n</correction>`);
@@ -41,15 +49,12 @@ export class CorrectionApplicator {
         return { blocked: true, message: correction.message };
 
       case 'restart':
-        if (this.deps.killAgent) {
-          await this.deps.killAgent(agentId);
-        }
+        await this.deps.killAgent(agentId);
+        await this.deps.respawnAgent(agentId);
         return { blocked: true, message: 'Agent restarted' };
 
       case 'reassign':
-        if (this.deps.reassignTask) {
-          await this.deps.reassignTask(agentId);
-        }
+        await this.deps.reassignTask(agentId);
         return { blocked: true, message: 'Task reassigned' };
 
       case 'escalate':
@@ -60,8 +65,11 @@ export class CorrectionApplicator {
         return { blocked: false, message: `Retry requested (max: ${correction.max ?? 3}, backoff: ${correction.backoff ?? 1000}ms)` };
 
       case 'compact':
-        // Compact correction - signal that context should be compacted
-        return { blocked: false, message: `Context compaction requested` };
+        await this.deps.compactContext(agentId, {
+          keepLastN: correction.keepLastN,
+          summarize: correction.summarize,
+        });
+        return { blocked: false, message: 'Context compaction requested' };
 
       default:
         return { blocked: false };

@@ -193,6 +193,22 @@ export class Daemon {
           await targetAgent.injectPrompt(message);
         }
       },
+      killAgent: async (id: string) => {
+        // Kill agent process - to be implemented with AgentManager integration
+        this.agents.delete(id);
+      },
+      respawnAgent: async (id: string) => {
+        // Respawn agent - to be implemented with AgentManager integration
+        // For now, this is a placeholder that will be wired up later
+      },
+      reassignTask: async (id: string) => {
+        // Reassign task from agent - to be implemented with StateManager integration
+        // For now, this is a placeholder that will be wired up later
+      },
+      compactContext: async (id: string, options) => {
+        // Compact agent context - to be implemented with context management
+        // For now, this is a placeholder that will be wired up later
+      },
     });
   }
 

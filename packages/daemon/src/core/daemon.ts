@@ -6,10 +6,16 @@ import { StateManager } from '../state/manager.js';
 import { TrajectoryLogger } from '../trajectory/logger.js';
 import { IPCServer } from '../ipc/server.js';
 import { TaskStatus } from '../types/state.js';
+import { CheckerChain } from '../checkers/chain.js';
+import type { Violation, TrajectoryEvent } from '../checkers/types.js';
 
 interface DaemonOptions {
   worktreeRoot: string;
   socketPath?: string;
+}
+
+export interface ProcessEventResult {
+  violation?: Violation;
 }
 
 export class Daemon {
@@ -19,6 +25,8 @@ export class Daemon {
   private readonly trajectory: TrajectoryLogger;
   private readonly ipcServer: IPCServer;
   private running: boolean = false;
+  private checkerChain: CheckerChain | null = null;
+  private trajectoryHistory: TrajectoryEvent[] = [];
 
   constructor(options: DaemonOptions) {
     this.worktreeRoot = options.worktreeRoot;
@@ -49,6 +57,37 @@ export class Daemon {
 
   getSocketPath(): string {
     return this.socketPath;
+  }
+
+  loadCheckerChain(checkerChain: CheckerChain): void {
+    this.checkerChain = checkerChain;
+  }
+
+  async processAgentEvent(
+    agentId: string,
+    event: TrajectoryEvent
+  ): Promise<ProcessEventResult> {
+    // 1. Log event to trajectory
+    await this.trajectory.log(event);
+    this.trajectoryHistory.push(event);
+
+    // 2. Check invariants via CheckerChain
+    if (this.checkerChain) {
+      const state = await this.stateManager.load();
+      const violation = this.checkerChain.check(
+        agentId,
+        event,
+        state,
+        this.trajectoryHistory
+      );
+
+      // 3. Return any violation
+      if (violation) {
+        return { violation };
+      }
+    }
+
+    return {};
   }
 
   private registerHandlers(): void {

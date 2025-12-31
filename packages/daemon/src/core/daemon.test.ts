@@ -1,6 +1,8 @@
 // packages/daemon/src/core/daemon.test.ts
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { Daemon } from './daemon.js';
+import { CheckerChain } from '../checkers/chain.js';
+import { TddChecker } from '../checkers/tdd.js';
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 import * as os from 'node:os';
@@ -85,5 +87,35 @@ describe('Daemon', () => {
     expect(typeof parsed.data.timestamp).toBe('number');
 
     client.end();
+  });
+
+  it('should check invariants when processing agent events', async () => {
+    daemon = new Daemon({ worktreeRoot: tempDir });
+
+    // Create a CheckerChain with TDD checker that requires test before impl
+    const checkerChain = new CheckerChain([
+      new TddChecker({
+        test: '**/*.test.ts',
+        impl: 'src/**/*.ts',
+        agentName: 'worker',
+      }),
+    ]);
+    daemon.loadCheckerChain(checkerChain);
+
+    await daemon.start();
+
+    // Simulate agent event that violates TDD (impl before test)
+    const result = await daemon.processAgentEvent('worker-1', {
+      type: 'tool_use',
+      tool: 'Write',
+      path: 'src/feature.ts',
+      timestamp: Date.now(),
+      agentId: 'worker-1',
+    });
+
+    expect(result.violation).toBeDefined();
+    expect(result.violation?.type).toBe('tdd');
+
+    await daemon.stop();
   });
 });

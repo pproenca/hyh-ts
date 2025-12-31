@@ -11,6 +11,7 @@ export { StateManager } from './state/manager.js';
 
 // Trajectory
 export { TrajectoryLogger } from './trajectory/logger.js';
+export { MetricsCollector, type WorkflowMetrics } from './trajectory/metrics.js';
 
 // IPC
 export { IPCServer } from './ipc/server.js';

@@ -10,6 +10,18 @@ import {
   TaskStatus,
 } from '../types/state.js';
 
+export interface StateIssue {
+  type: 'orphaned_task' | 'stale_agent' | 'invalid_reference';
+  taskId?: string;
+  agentId?: string;
+  message: string;
+}
+
+export interface RecoveryResult {
+  state: WorkflowState | null;
+  repaired: StateIssue[];
+}
+
 export class StateManager {
   private readonly worktreeRoot: string;
   private readonly stateFile: string;
@@ -274,5 +286,66 @@ export class StateManager {
     }
     const elapsed = Date.now() - task.startedAt;
     return elapsed > task.timeoutSeconds * 1000;
+  }
+
+  async recoverFromCrash(): Promise<RecoveryResult> {
+    return this.mutex.runExclusive(async () => {
+      const state = await this.loadInternal();
+      if (!state) {
+        return { state: null, repaired: [] };
+      }
+
+      const issues = this.validateStateInternal(state);
+      if (issues.length === 0) {
+        return { state, repaired: [] };
+      }
+
+      const repairedState = this.repairStateInternal(state, issues);
+      await this.saveInternal(repairedState);
+
+      return { state: repairedState, repaired: issues };
+    });
+  }
+
+  private validateStateInternal(state: WorkflowState): StateIssue[] {
+    const issues: StateIssue[] = [];
+    const now = Date.now();
+
+    // Check for orphaned running tasks (stale timestamps)
+    for (const [taskId, task] of Object.entries(state.tasks)) {
+      if (task.status === TaskStatus.RUNNING && task.startedAt) {
+        const elapsed = now - task.startedAt;
+        if (elapsed > task.timeoutSeconds * 1000) {
+          issues.push({
+            type: 'orphaned_task',
+            taskId,
+            message: `Task ${taskId} timed out (${Math.floor(elapsed / 1000)}s > ${task.timeoutSeconds}s)`,
+          });
+        }
+      }
+    }
+
+    return issues;
+  }
+
+  private repairStateInternal(state: WorkflowState, issues: StateIssue[]): WorkflowState {
+    const newTasks = { ...state.tasks };
+
+    for (const issue of issues) {
+      if (issue.type === 'orphaned_task' && issue.taskId) {
+        const task = newTasks[issue.taskId];
+        if (task) {
+          newTasks[issue.taskId] = {
+            ...task,
+            status: TaskStatus.PENDING,
+            claimedBy: null,
+            startedAt: null,
+            claimedAt: null,
+          };
+        }
+      }
+    }
+
+    return { ...state, tasks: newTasks };
   }
 }

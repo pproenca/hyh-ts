@@ -1,4 +1,6 @@
 // packages/dsl/src/compiler/index.ts
+import * as fs from 'node:fs/promises';
+import * as path from 'node:path';
 import { CompiledWorkflow } from '../types/compiled.js';
 
 export interface CompileOptions {
@@ -39,4 +41,19 @@ function validateWorkflow(workflow: CompiledWorkflow): void {
       throw new Error(`Phase '${phase.name}' references unknown gate '${phase.gate}'`);
     }
   }
+}
+
+export async function compileToDir(
+  workflow: CompiledWorkflow,
+  outputDir: string,
+  options: CompileOptions = {}
+): Promise<void> {
+  const compiled = compile(workflow, options);
+
+  // Ensure output directory exists
+  await fs.mkdir(outputDir, { recursive: true });
+
+  // Write workflow.json
+  const workflowPath = path.join(outputDir, 'workflow.json');
+  await fs.writeFile(workflowPath, JSON.stringify(compiled, null, 2));
 }

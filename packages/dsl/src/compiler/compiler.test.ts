@@ -1,6 +1,9 @@
 // packages/dsl/src/compiler/compiler.test.ts
+import * as fs from 'node:fs/promises';
+import * as os from 'node:os';
+import * as path from 'node:path';
 import { describe, it, expect } from 'vitest';
-import { compile } from './index.js';
+import { compile, compileToDir } from './index.js';
 import { workflow, agent, queue, inv, correct } from '../index.js';
 
 describe('DSL Compiler', () => {
@@ -27,5 +30,30 @@ describe('DSL Compiler', () => {
     expect(compiled.orchestrator).toBe('orchestrator');
     expect(compiled.phases).toHaveLength(1);
     expect(compiled.phases[0].expects).toContain('Read');
+  });
+});
+
+describe('compileToDir', () => {
+  it('writes workflow.json to output directory', async () => {
+    const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'hyh-test-'));
+
+    const orchestrator = agent('orchestrator').model('opus').role('coordinator');
+    const wf = workflow('test')
+      .orchestrator(orchestrator)
+      .phase('plan')
+        .agent(orchestrator)
+      .build();
+
+    await compileToDir(wf, tmpDir);
+
+    const workflowJson = await fs.readFile(
+      path.join(tmpDir, 'workflow.json'),
+      'utf-8'
+    );
+    const parsed = JSON.parse(workflowJson);
+    expect(parsed.name).toBe('test');
+
+    // Cleanup
+    await fs.rm(tmpDir, { recursive: true });
   });
 });

@@ -33,7 +33,7 @@ export function Trajectory({ state }: TrajectoryProps) {
       <Text dimColor>{events.length} events</Text>
       <Box flexDirection="column" marginTop={1}>
         {events.slice(-15).map((event, i) => {
-          const time = new Date(event.timestamp).toLocaleTimeString();
+          const time = new Date(event.timestamp ?? Date.now()).toLocaleTimeString();
           return (
             <Text key={i}>
               <Text dimColor>{time}</Text>

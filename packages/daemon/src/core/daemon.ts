@@ -139,8 +139,9 @@ export class Daemon {
 
       // Calculate wave for the task to determine worktree path
       let worktreePath: string | undefined;
-      if (spec.taskId && taskMap[spec.taskId]) {
-        const wave = this.worktreeManager.calculateWave(taskMap[spec.taskId], taskMap);
+      const task = spec.taskId ? taskMap[spec.taskId] : undefined;
+      if (task) {
+        const wave = this.worktreeManager.calculateWave(task, taskMap);
         worktreePath = this.worktreeManager.getWorktreePath(wave);
       }
 
@@ -175,6 +176,11 @@ export class Daemon {
 
   checkHeartbeat(agentId: string, interval: number): HeartbeatStatus {
     return this.heartbeatMonitor.check(agentId, interval);
+  }
+
+  checkHeartbeats(): string[] {
+    const overdueAgents = this.heartbeatMonitor.getOverdueAgents();
+    return overdueAgents.map((a) => a.agentId);
   }
 
   setAgent(agentId: string, agent: Agent): void {

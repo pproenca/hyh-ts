@@ -63,7 +63,7 @@ export function registerLogsCommand(program: Command): void {
             await client.disconnect();
           }
         } else {
-          console.error('Failed to get logs:', response.message);
+          console.error('Failed to get logs:', response.status === 'error' ? response.message : 'Unknown error');
           process.exit(1);
         }
       } catch (error) {

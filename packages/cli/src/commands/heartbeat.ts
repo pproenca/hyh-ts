@@ -28,7 +28,7 @@ export function registerHeartbeatCommand(program: Command): void {
         if (response.status === 'ok') {
           console.log('Heartbeat sent');
         } else {
-          console.error('Heartbeat failed:', response.message);
+          console.error('Heartbeat failed:', response.status === 'error' ? response.message : 'Unknown error');
           process.exit(1);
         }
       } finally {

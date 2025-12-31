@@ -117,6 +117,7 @@ export function registerRunCommand(program: Command): void {
 
           // Add tasks to state
           await daemon.stateManager.update(s => {
+            if (!s.tasks) s.tasks = {};
             for (const [taskId, taskState] of Object.entries(taskStates)) {
               s.tasks[taskId] = taskState;
             }

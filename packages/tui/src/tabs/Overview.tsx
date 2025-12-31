@@ -8,20 +8,24 @@ interface OverviewProps {
 }
 
 function TodoProgressDisplay({ todo }: { todo?: TodoProgress }) {
-  if (!todo || todo.total === 0) return null;
+  const total = todo?.total ?? 0;
+  const completed = todo?.completed ?? 0;
+  const incomplete = todo?.incomplete ?? [];
 
-  const pct = Math.round((todo.completed / todo.total) * 100);
+  if (!todo || total === 0) return null;
+
+  const pct = Math.round((completed / total) * 100);
 
   return (
     <Box flexDirection="column" marginTop={1}>
-      <Text bold>Todo: {todo.completed}/{todo.total} ({pct}%)</Text>
-      {todo.incomplete.length > 0 && (
+      <Text bold>Todo: {completed}/{total} ({pct}%)</Text>
+      {incomplete.length > 0 && (
         <Box flexDirection="column" marginLeft={2}>
-          {todo.incomplete.slice(0, 5).map((item, i) => (
+          {incomplete.slice(0, 5).map((item, i) => (
             <Text key={i} color="yellow">- {item}</Text>
           ))}
-          {todo.incomplete.length > 5 && (
-            <Text dimColor>... and {todo.incomplete.length - 5} more</Text>
+          {incomplete.length > 5 && (
+            <Text dimColor>... and {incomplete.length - 5} more</Text>
           )}
         </Box>
       )}
@@ -34,12 +38,12 @@ export function Overview({ state }: OverviewProps) {
     return <Text dimColor>No workflow state</Text>;
   }
 
-  const tasks = Object.values(state.tasks);
+  const tasks = Object.values(state.tasks ?? {});
   const completed = tasks.filter(t => t.status === 'completed').length;
   const running = tasks.filter(t => t.status === 'running').length;
   const pending = tasks.filter(t => t.status === 'pending').length;
 
-  const agents = Object.values(state.agents);
+  const agents = Object.values(state.agents ?? {});
   const activeAgents = agents.filter(a => a.status === 'active' || a.status === 'idle');
 
   return (
@@ -70,7 +74,7 @@ export function Overview({ state }: OverviewProps) {
           ))
         )}
       </Box>
-      <TodoProgressDisplay todo={state.todo} />
+      {state.todo && <TodoProgressDisplay todo={state.todo} />}
     </Box>
   );
 }

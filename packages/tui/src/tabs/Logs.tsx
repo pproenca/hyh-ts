@@ -38,7 +38,7 @@ export function Logs({ state }: LogsProps) {
       <Text bold>LOGS</Text>
       <Box flexDirection="column" marginTop={1}>
         {logs.slice(-20).map((log, i) => {
-          const time = new Date(log.timestamp).toLocaleTimeString();
+          const time = new Date(log.timestamp ?? Date.now()).toLocaleTimeString();
           return (
             <Text key={i}>
               <Text dimColor>{time}</Text>

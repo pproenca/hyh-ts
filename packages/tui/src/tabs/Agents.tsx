@@ -65,7 +65,7 @@ export function Agents({ state, onAttach }: AgentsProps) {
     return <Text dimColor>No agents</Text>;
   }
 
-  const agents = Object.values(state.agents);
+  const agents = Object.values(state.agents ?? {});
 
   if (agents.length === 0) {
     return <Text dimColor>No agents</Text>;
@@ -78,14 +78,16 @@ export function Agents({ state, onAttach }: AgentsProps) {
         {onAttach && <Text dimColor> [a] attach</Text>}
       </Box>
       {agents.map(agent => {
-        const heartbeat = formatHeartbeat(agent.lastHeartbeat);
+        const heartbeat = formatHeartbeat(agent.lastHeartbeat ?? null);
         const agentWithContext = agent as AgentWithContext;
+        const agentId = agent.id ?? 'unknown';
+        const agentStatus = agent.status ?? 'idle';
         return (
-          <Box key={agent.id} marginTop={1} flexDirection="column">
+          <Box key={agentId} marginTop={1} flexDirection="column">
             <Text>
               {(() => {
-                const statusColor = getStatusColor(agent.status);
-                const icon = getStatusIcon(agent.status);
+                const statusColor = getStatusColor(agentStatus);
+                const icon = getStatusIcon(agentStatus);
                 return statusColor ? <Text color={statusColor}>{icon}</Text> : <Text>{icon}</Text>;
               })()} {agent.id}
               <Text dimColor> ({agent.type})</Text>

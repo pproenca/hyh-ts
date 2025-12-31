@@ -19,20 +19,25 @@ export function Tasks({ state }: TasksProps) {
     return <Text dimColor>No tasks</Text>;
   }
 
-  const tasks = Object.values(state.tasks);
+  const tasks = Object.values(state.tasks ?? {});
 
   return (
     <Box flexDirection="column" padding={1}>
       <Text bold>TASKS ({tasks.length})</Text>
-      {tasks.map(task => (
-        <Box key={task.id} marginTop={1}>
-          <Text>
-            {STATUS_ICONS[task.status] || '?'} {task.id}
-            <Text dimColor> - {task.description.slice(0, 40)}</Text>
-            {task.claimedBy && <Text color="yellow"> [{task.claimedBy}]</Text>}
-          </Text>
-        </Box>
-      ))}
+      {tasks.map(task => {
+        const taskId = task.id ?? 'unknown';
+        const taskStatus = task.status ?? 'pending';
+        const taskDesc = task.description ?? '';
+        return (
+          <Box key={taskId} marginTop={1}>
+            <Text>
+              {STATUS_ICONS[taskStatus] || '?'} {taskId}
+              <Text dimColor> - {taskDesc.slice(0, 40)}</Text>
+              {task.claimedBy && <Text color="yellow"> [{task.claimedBy}]</Text>}
+            </Text>
+          </Box>
+        );
+      })}
       <Box marginTop={1}>
         <Text dimColor>
           ✓ completed  ● running  ○ pending  ✗ failed

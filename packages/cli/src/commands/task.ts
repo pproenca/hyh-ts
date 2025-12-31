@@ -29,8 +29,8 @@ export function registerTaskCommand(program: Command): void {
           workerId,
         });
 
-        if (response.status === 'error') {
-          console.error('Error:', response.message);
+        if (response.status !== 'ok') {
+          console.error('Error:', response.status === 'error' ? response.message : 'Unknown error');
           process.exit(1);
         }
 

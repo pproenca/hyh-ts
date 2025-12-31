@@ -5,7 +5,7 @@ export interface Daemon {
   spawnAgents(triggers: SpawnTrigger[]): Promise<void>;
   checkPhaseTransition(): Promise<boolean>;
   stateManager: { flush(): void };
-  heartbeatMonitor: { getOverdueAgents(): unknown[] };
+  checkHeartbeats?(): string[];
   getActiveAgents?(): { agentId: string; pollEvents(): unknown[] }[];
   processAgentEvent?(agentId: string, event: unknown): Promise<unknown>;
 }
@@ -67,7 +67,7 @@ export class EventLoop {
     }
 
     // 2. Check heartbeats (handle overdue agents)
-    this.daemon.heartbeatMonitor.getOverdueAgents();
+    this.daemon.checkHeartbeats?.();
 
     // 3. Check phase transitions
     await this.daemon.checkPhaseTransition();

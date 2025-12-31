@@ -15,12 +15,12 @@ export async function checkClaudeCli(): Promise<ClaudeCliInfo> {
     }).trim();
 
     const match = version.match(/(\d+\.\d+\.\d+)/);
-    const versionStr = match ? match[1] : 'unknown';
+    const versionStr = match?.[1] ?? 'unknown';
 
     return {
       available: true,
       version: versionStr,
-    };
+    } as ClaudeCliInfo;
   } catch (error) {
     return {
       available: false,

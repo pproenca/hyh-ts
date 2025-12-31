@@ -74,6 +74,17 @@ export function registerRunCommand(program: Command): void {
           console.log(`Log level: ${config.daemon.logLevel}`);
         }
 
+        // Check for Claude CLI
+        const { checkClaudeCli } = await import('@hyh/daemon');
+        const claudeInfo = await checkClaudeCli();
+
+        if (!claudeInfo.available) {
+          console.warn(`Warning: Claude CLI not found: ${claudeInfo.error}`);
+          console.warn(
+            '   Agents will not be able to spawn. Install claude CLI to enable full functionality.'
+          );
+        }
+
         // Import and start daemon
         const { Daemon } = await import('@hyh/daemon');
         const daemon = new Daemon({ worktreeRoot: projectDir });

@@ -1,0 +1,30 @@
+{
+  "name": "@hyh/daemon",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "bin": {
+    "hyh-daemon": "./dist/bin/daemon.js"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@hyh/dsl": "workspace:*",
+    "zod": "^3.24.0",
+    "async-mutex": "^0.5.0",
+    "proper-lockfile": "^4.1.0",
+    "pino": "^9.6.0"
+  },
+  "devDependencies": {
+    "@types/proper-lockfile": "^4.1.0"
+  }
+}

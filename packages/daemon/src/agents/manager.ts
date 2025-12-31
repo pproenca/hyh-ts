@@ -1,6 +1,11 @@
 // packages/daemon/src/agents/manager.ts
 import * as crypto from 'node:crypto';
 import { AgentProcess, AgentProcessConfig } from './process.js';
+import {
+  TaskPacketFactory,
+  type TaskPacket,
+  type TaskPacketInput,
+} from '../managers/task-packet.js';
 
 export interface SpawnSpec {
   agentType: string;
@@ -11,12 +16,43 @@ export interface SpawnSpec {
   worktreePath?: string;
 }
 
+export interface AgentManagerOptions {
+  worktreeRoot: string;
+  taskPacketFactory?: TaskPacketFactory;
+}
+
 export class AgentManager {
   private readonly worktreeRoot: string;
   private agents: Map<string, AgentProcess> = new Map();
+  private readonly taskPacketFactory: TaskPacketFactory | undefined;
 
-  constructor(worktreeRoot: string) {
-    this.worktreeRoot = worktreeRoot;
+  constructor(options: AgentManagerOptions | string) {
+    // Support both old (string) and new (options) constructor signatures
+    if (typeof options === 'string') {
+      this.worktreeRoot = options;
+      this.taskPacketFactory = undefined;
+    } else {
+      this.worktreeRoot = options.worktreeRoot;
+      this.taskPacketFactory = options.taskPacketFactory;
+    }
+  }
+
+  /**
+   * Creates a task packet for structured task handoff.
+   * Returns undefined if no TaskPacketFactory was provided.
+   */
+  createTaskPacket(input: TaskPacketInput): TaskPacket | undefined {
+    return this.taskPacketFactory?.create(input);
+  }
+
+  /**
+   * Creates a task packet asynchronously, loading dependency artifacts.
+   * Returns undefined if no TaskPacketFactory was provided.
+   */
+  async createTaskPacketAsync(
+    input: TaskPacketInput
+  ): Promise<TaskPacket | undefined> {
+    return this.taskPacketFactory?.createAsync(input);
   }
 
   generateAgentId(agentType: string, taskId?: string): string {

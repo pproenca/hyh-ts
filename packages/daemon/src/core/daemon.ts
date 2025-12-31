@@ -566,5 +566,24 @@ export class Daemon {
       setTimeout(() => this.stop(), 100);
       return { shutdown: true };
     });
+
+    // Get logs
+    this.ipcServer.registerHandler('get_logs', async (request: unknown) => {
+      const req = request as { limit?: number; agentId?: string };
+      const limit = req.limit ?? 20;
+
+      const events = req.agentId
+        ? await this.trajectory.filterByAgent(req.agentId, limit)
+        : await this.trajectory.tail(limit);
+
+      return {
+        logs: events.map((e) => ({
+          timestamp: e.timestamp,
+          agentId: e.agentId ?? 'system',
+          type: e.type,
+          message: JSON.stringify(e),
+        })),
+      };
+    });
   }
 }

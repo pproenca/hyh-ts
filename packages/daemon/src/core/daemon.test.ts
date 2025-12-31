@@ -447,4 +447,73 @@ describe('Daemon', () => {
 
     expect(Array.isArray(activeAgents)).toBe(true);
   });
+
+  describe('get_logs handler', () => {
+    it('returns recent trajectory events', async () => {
+      daemon = new Daemon({ worktreeRoot: tempDir });
+      await daemon.start();
+
+      // Setup: log some events
+      await daemon['trajectory'].log({
+        type: 'agent_spawn',
+        timestamp: Date.now(),
+        agentId: 'test-agent',
+      });
+      await daemon['trajectory'].log({
+        type: 'tool_use',
+        timestamp: Date.now(),
+        agentId: 'test-agent',
+        toolName: 'Read',
+      });
+
+      const socketPath = daemon.getSocketPath();
+      const client = net.createConnection(socketPath);
+      await new Promise<void>((resolve) => client.once('connect', resolve));
+
+      client.write(JSON.stringify({ command: 'get_logs', limit: 10 }) + '\n');
+
+      const response = await new Promise<string>((resolve) => {
+        client.once('data', (data) => resolve(data.toString()));
+      });
+
+      const parsed = JSON.parse(response.trim());
+      expect(parsed.status).toBe('ok');
+      expect(parsed.data.logs).toHaveLength(2);
+
+      client.end();
+    });
+
+    it('filters by agentId when specified', async () => {
+      daemon = new Daemon({ worktreeRoot: tempDir });
+      await daemon.start();
+
+      await daemon['trajectory'].log({
+        type: 'agent_spawn',
+        timestamp: Date.now(),
+        agentId: 'agent-1',
+      });
+      await daemon['trajectory'].log({
+        type: 'agent_spawn',
+        timestamp: Date.now(),
+        agentId: 'agent-2',
+      });
+
+      const socketPath = daemon.getSocketPath();
+      const client = net.createConnection(socketPath);
+      await new Promise<void>((resolve) => client.once('connect', resolve));
+
+      client.write(JSON.stringify({ command: 'get_logs', agentId: 'agent-1' }) + '\n');
+
+      const response = await new Promise<string>((resolve) => {
+        client.once('data', (data) => resolve(data.toString()));
+      });
+
+      const parsed = JSON.parse(response.trim());
+      expect(parsed.status).toBe('ok');
+      expect(parsed.data.logs).toHaveLength(1);
+      expect(parsed.data.logs[0].agentId).toBe('agent-1');
+
+      client.end();
+    });
+  });
 });

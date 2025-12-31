@@ -12,6 +12,7 @@ import { CorrectionApplicator, type Correction } from '../corrections/applicator
 import type { Violation, TrajectoryEvent } from '../checkers/types.js';
 import { SpawnTriggerManager, type SpawnSpec } from '../workflow/spawn-trigger.js';
 import { AgentManager } from '../agents/manager.js';
+import { WorktreeManager } from '../git/worktree.js';
 import { PhaseManager } from '../workflow/phase-manager.js';
 import { HeartbeatMonitor, type HeartbeatStatus } from '../agents/heartbeat.js';
 import { GateExecutor, type GateResult } from '../workflow/gate-executor.js';
@@ -58,6 +59,7 @@ export class Daemon {
   private readonly heartbeatMonitor: HeartbeatMonitor = new HeartbeatMonitor();
   private gateExecutor: GateExecutor | null = null;
   private readonly agentManager: AgentManager;
+  private readonly worktreeManager: WorktreeManager;
 
   constructor(options: DaemonOptions) {
     this.worktreeRoot = options.worktreeRoot;
@@ -75,6 +77,7 @@ export class Daemon {
       path.join(this.worktreeRoot, '.hyh', 'artifacts')
     );
     this.agentManager = new AgentManager(this.worktreeRoot);
+    this.worktreeManager = new WorktreeManager(this.worktreeRoot);
 
     // Register handlers
     this.registerHandlers();
@@ -112,6 +115,16 @@ export class Daemon {
   }
 
   async spawnAgents(specs: SpawnSpec[]): Promise<void> {
+    // Load state to get task dependencies for wave calculation
+    const state = await this.stateManager.load();
+    const taskMap: Record<string, { id: string; dependencies: string[] }> = {};
+
+    if (state) {
+      for (const [id, task] of Object.entries(state.tasks)) {
+        taskMap[id] = { id, dependencies: task.dependencies };
+      }
+    }
+
     for (const spec of specs) {
       // Get agent config from workflow
       const agentConfig = this.workflow?.agents?.[spec.agentType];
@@ -124,6 +137,13 @@ export class Daemon {
         typeof tool === 'string' ? tool : tool.tool
       );
 
+      // Calculate wave for the task to determine worktree path
+      let worktreePath: string | undefined;
+      if (spec.taskId && taskMap[spec.taskId]) {
+        const wave = this.worktreeManager.calculateWave(taskMap[spec.taskId], taskMap);
+        worktreePath = this.worktreeManager.getWorktreePath(wave);
+      }
+
       // Build full spawn spec with agent configuration
       const fullSpec = {
         agentType: spec.agentType,
@@ -131,6 +151,7 @@ export class Daemon {
         model: (agentConfig.model || 'sonnet') as 'haiku' | 'sonnet' | 'opus',
         tools: toolNames,
         systemPromptPath: agentConfig.systemPrompt || '',
+        worktreePath,
       };
 
       const process = await this.agentManager.spawn(fullSpec);

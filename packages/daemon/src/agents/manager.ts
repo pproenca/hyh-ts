@@ -8,6 +8,7 @@ export interface SpawnSpec {
   model: 'haiku' | 'sonnet' | 'opus';
   tools: string[];
   systemPromptPath: string;
+  worktreePath?: string;
 }
 
 export class AgentManager {
@@ -35,7 +36,7 @@ export class AgentManager {
       sessionId,
       systemPromptPath: spec.systemPromptPath,
       tools: spec.tools,
-      cwd: this.worktreeRoot,
+      cwd: spec.worktreePath ?? this.worktreeRoot,
     };
 
     const agent = new AgentProcess(config);

@@ -32,3 +32,18 @@ describe('run command with TUI', () => {
     expect(typeof startTUI).toBe('function');
   });
 });
+
+describe('plan import', () => {
+  it('should have PlanImporter available from daemon', async () => {
+    const { PlanImporter } = await import('@hyh/daemon');
+    expect(typeof PlanImporter).toBe('function');
+  });
+});
+
+describe('Claude CLI check', () => {
+  it('should check for Claude CLI before running', async () => {
+    const { checkClaudeCli } = await import('@hyh/daemon');
+    const result = await checkClaudeCli();
+    expect(result).toHaveProperty('available');
+  });
+});

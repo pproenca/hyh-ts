@@ -3,6 +3,23 @@ import { describe, it, expect, vi } from 'vitest';
 import { EventLoop } from './event-loop.js';
 
 describe('EventLoop', () => {
+  it('should call daemon.spawnAgents when spawn triggers fire', async () => {
+    const mockDaemon = {
+      checkSpawnTriggers: vi.fn().mockResolvedValue([{ agentType: 'worker', taskId: 't1' }]),
+      spawnAgents: vi.fn().mockResolvedValue(undefined),
+      checkPhaseTransition: vi.fn().mockResolvedValue(false),
+      stateManager: { flush: vi.fn() },
+      heartbeatMonitor: { getOverdueAgents: vi.fn().mockReturnValue([]) },
+    };
+
+    const eventLoop = new EventLoop(mockDaemon as any, { tickInterval: 10 });
+
+    // Run one tick
+    await eventLoop.tick();
+
+    expect(mockDaemon.spawnAgents).toHaveBeenCalledWith([{ agentType: 'worker', taskId: 't1' }]);
+  });
+
   it('runs tick cycle and can be stopped', async () => {
     const onTick = vi.fn();
     const loop = new EventLoop({ tickInterval: 10, onTick });

@@ -1,5 +1,6 @@
 // packages/daemon/src/checkers/context-budget.ts
 import type { Checker, Violation, CheckContext, TrajectoryEvent } from './types.js';
+import { get_encoding } from 'tiktoken';
 
 export interface ContextBudgetOptions {
   max: number;
@@ -7,8 +8,22 @@ export interface ContextBudgetOptions {
   modelLimit: number;
 }
 
+let encoder: ReturnType<typeof get_encoding> | null = null;
+
+function getEncoder() {
+  if (!encoder) {
+    encoder = get_encoding('cl100k_base');
+  }
+  return encoder;
+}
+
 export function estimateTokens(text: string): number {
-  return Math.ceil(text.length / 4);
+  try {
+    return getEncoder().encode(text).length;
+  } catch {
+    // Fallback to char/4 if tiktoken fails
+    return Math.ceil(text.length / 4);
+  }
 }
 
 export class ContextBudgetChecker implements Checker {

@@ -22,7 +22,7 @@ describe('generateHooksJson', () => {
     const coder = agent('coder')
       .model('sonnet')
       .role('implementer')
-      .postToolUse('Edit|Write', ['hyh lint --fix']);
+      .postToolUse({ matcher: 'Edit|Write', run: ['hyh lint --fix'] });
 
     const orch = agent('orchestrator').model('opus').role('coordinator');
     const wf = workflow('test')
@@ -44,7 +44,7 @@ describe('generateHooksJson', () => {
     const reviewer = agent('reviewer')
       .model('sonnet')
       .role('reviewer')
-      .subagentStop(['hyh verify-review']);
+      .subagentStop({ verify: ['hyh verify-review'] });
 
     const orch = agent('orchestrator').model('opus').role('coordinator');
     const wf = workflow('test')
@@ -66,12 +66,12 @@ describe('generateHooksJson', () => {
     const coder = agent('coder')
       .model('sonnet')
       .role('implementer')
-      .postToolUse('Edit|Write', ['hyh lint --fix']);
+      .postToolUse({ matcher: 'Edit|Write', run: ['hyh lint --fix'] });
 
     const tester = agent('tester')
       .model('sonnet')
       .role('tester')
-      .postToolUse('Bash', ['hyh check-tests']);
+      .postToolUse({ matcher: 'Bash', run: ['hyh check-tests'] });
 
     const orch = agent('orchestrator').model('opus').role('coordinator');
     const wf = workflow('test')

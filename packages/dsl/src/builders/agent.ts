@@ -16,6 +16,11 @@ interface SubagentStopConfig {
   verify: string[];
 }
 
+interface ReinjectConfig {
+  every: number;
+  content: string;
+}
+
 export class AgentBuilder {
   private _name: string;
   private _model: Model = 'sonnet';
@@ -28,6 +33,7 @@ export class AgentBuilder {
   private _isReadOnly: boolean = false;
   private _postToolUse?: PostToolUseConfig;
   private _subagentStop?: SubagentStopConfig;
+  private _reinject?: ReinjectConfig;
 
   constructor(name: string) {
     this._name = name;
@@ -75,13 +81,18 @@ export class AgentBuilder {
     return this;
   }
 
-  postToolUse(matcher: string, commands: string[]): this {
-    this._postToolUse = { matcher, commands };
+  postToolUse(config: { matcher: string; run: string[] }): this {
+    this._postToolUse = { matcher: config.matcher, commands: config.run };
     return this;
   }
 
-  subagentStop(verify: string[]): this {
-    this._subagentStop = { verify };
+  subagentStop(config: { verify: string[] }): this {
+    this._subagentStop = { verify: config.verify };
+    return this;
+  }
+
+  reinject(config: { every: number; content: string }): this {
+    this._reinject = { every: config.every, content: config.content };
     return this;
   }
 
@@ -121,6 +132,9 @@ export class AgentBuilder {
     }
     if (this._subagentStop) {
       result.subagentStop = this._subagentStop;
+    }
+    if (this._reinject) {
+      result.reinject = this._reinject;
     }
     return result;
   }

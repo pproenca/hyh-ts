@@ -28,3 +28,47 @@ describe('AgentBuilder', () => {
     expect(compiled.tools).not.toContain('Edit');
   });
 });
+
+describe('AgentBuilder anti-abandonment', () => {
+  it('adds postToolUse configuration', () => {
+    const ag = agent('worker')
+      .model('sonnet')
+      .role('implementation')
+      .postToolUse({
+        matcher: 'Write|Edit',
+        run: ['npm run typecheck', 'npm run lint --fix'],
+      });
+
+    const compiled = ag.build();
+    expect(compiled.postToolUse).toBeDefined();
+    expect(compiled.postToolUse?.matcher).toBe('Write|Edit');
+    expect(compiled.postToolUse?.commands).toContain('npm run typecheck');
+  });
+
+  it('adds subagentStop configuration', () => {
+    const ag = agent('worker')
+      .model('sonnet')
+      .role('implementation')
+      .subagentStop({
+        verify: ['npm test', 'hyh verify-complete'],
+      });
+
+    const compiled = ag.build();
+    expect(compiled.subagentStop).toBeDefined();
+    expect(compiled.subagentStop?.verify).toContain('npm test');
+  });
+
+  it('adds reinject configuration', () => {
+    const ag = agent('worker')
+      .model('sonnet')
+      .role('implementation')
+      .reinject({
+        every: 5,
+        content: 'Stay focused on the task',
+      });
+
+    const compiled = ag.build();
+    expect(compiled.reinject).toBeDefined();
+    expect(compiled.reinject?.every).toBe(5);
+  });
+});

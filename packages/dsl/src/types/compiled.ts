@@ -62,6 +62,10 @@ export interface CompiledAgent {
   subagentStop?: {
     verify: string[];
   };
+  reinject?: {
+    every: number;
+    content: string;
+  };
 }
 
 // Compiled phase

@@ -171,6 +171,39 @@ describe('PhaseBuilder.checkpoint', () => {
   });
 });
 
+describe('PhaseBuilder.onApprove', () => {
+  it('stores onApprove action as string', () => {
+    const orch = agent('orch').model('sonnet');
+    const result = workflow('test')
+      .orchestrator(orch)
+      .phase('complete')
+        .agent(orch)
+        .onApprove((ctx) => ctx.git.merge())
+      .build();
+
+    const phase = result.phases.find(p => p.name === 'complete');
+    expect(phase?.onApprove).toBeDefined();
+    expect(phase?.onApprove).toContain('ctx.git.merge');
+  });
+
+  it('stores async onApprove action', () => {
+    const orch = agent('orch').model('sonnet');
+    const result = workflow('test')
+      .orchestrator(orch)
+      .phase('complete')
+        .agent(orch)
+        .onApprove(async (ctx) => {
+          await ctx.git.commit('Final commit');
+          await ctx.git.push();
+        })
+      .build();
+
+    const phase = result.phases.find(p => p.name === 'complete');
+    expect(phase?.onApprove).toContain('git.commit');
+    expect(phase?.onApprove).toContain('git.push');
+  });
+});
+
 describe('PhaseBuilder.contextBudget', () => {
   it('should set context budget on phase', () => {
     const orch = agent('orch').model('sonnet').role('orchestrator');

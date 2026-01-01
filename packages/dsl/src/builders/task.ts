@@ -1,12 +1,5 @@
-export interface TaskDefinition {
-  id: string;
-  description?: string;
-  files: string[];
-  dependencies: string[];
-  instructions?: string;
-  success?: string;
-  wave?: number;
-}
+import { TaskDefinition } from '../types/compiled.js';
+export type { TaskDefinition } from '../types/compiled.js';
 
 export class TaskBuilder {
   private _id: string;

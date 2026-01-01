@@ -3,6 +3,7 @@ import { CompiledPhase, Checkpoint } from '../types/compiled.js';
 import { AgentBuilder } from './agent.js';
 import { QueueBuilder } from './queue.js';
 import { GateBuilder } from './gate.js';
+import type { Context } from '../types/context.js';
 
 // Forward reference type for WorkflowBuilder
 interface WorkflowBuilderLike {
@@ -26,6 +27,7 @@ export class PhaseBuilder {
   private _then?: string;
   private _checkpoint?: Checkpoint;
   private _contextBudget?: number;
+  private _onApprove?: string;
 
   constructor(name: string, workflow: WorkflowBuilderLike) {
     this._name = name;
@@ -93,6 +95,11 @@ export class PhaseBuilder {
     return this;
   }
 
+  onApprove(action: (ctx: Context) => void | Promise<void>): this {
+    this._onApprove = action.toString();
+    return this;
+  }
+
   // Allow chaining back to workflow
   phase(name: string): PhaseBuilder {
     return this._workflow.phase(name);
@@ -131,6 +138,9 @@ export class PhaseBuilder {
     }
     if (this._contextBudget !== undefined) {
       result.contextBudget = this._contextBudget;
+    }
+    if (this._onApprove) {
+      result.onApprove = this._onApprove;
     }
     return result;
   }

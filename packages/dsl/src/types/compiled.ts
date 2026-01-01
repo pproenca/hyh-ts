@@ -34,6 +34,13 @@ export interface Checkpoint {
   onTimeout?: 'abort' | 'continue' | 'escalate';
 }
 
+// Choice type for interactive user selections
+export interface Choice {
+  id: string;
+  type: 'choice';
+  options: string[];
+}
+
 // Compiled invariant
 export interface CompiledInvariant {
   type: string;
@@ -83,6 +90,7 @@ export interface CompiledPhase {
   then?: string;
   checkpoint?: Checkpoint;
   contextBudget?: number;
+  onApprove?: string;
 }
 
 // Example task for simulation mode
@@ -91,13 +99,24 @@ export interface ExampleTask {
   description: string;
 }
 
+// Task definition from TaskBuilder (for queue examples)
+export interface TaskDefinition {
+  id: string;
+  description?: string;
+  files: string[];
+  dependencies: string[];
+  instructions?: string;
+  success?: string;
+  wave?: number;
+}
+
 // Compiled queue
 export interface CompiledQueue {
   name: string;
   readyPredicate: string;
   donePredicate?: string;
   timeout: number;
-  examples?: ExampleTask[];
+  examples?: Array<ExampleTask | TaskDefinition>;
 }
 
 // Compiled gate

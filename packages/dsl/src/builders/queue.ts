@@ -2,13 +2,14 @@
 import { Duration, parseDuration } from '../types/primitives.js';
 import { CompiledQueue, ExampleTask } from '../types/compiled.js';
 import { Task } from '../types/context.js';
+import { TaskBuilder, TaskDefinition } from './task.js';
 
 export class QueueBuilder {
   private _name: string;
   private _readyPredicate: string = 'true';
   private _donePredicate?: string;
   private _timeout: number = 600000; // 10 minutes default
-  private _examples?: ExampleTask[];
+  private _examples?: Array<ExampleTask | TaskDefinition>;
 
   constructor(name: string) {
     this._name = name;
@@ -37,8 +38,13 @@ export class QueueBuilder {
     return this;
   }
 
-  examples(...tasks: ExampleTask[]): this {
-    this._examples = tasks;
+  examples(...tasks: Array<ExampleTask | TaskBuilder>): this {
+    this._examples = tasks.map((t) => {
+      if (t instanceof TaskBuilder) {
+        return t.build();
+      }
+      return t;
+    });
     return this;
   }
 

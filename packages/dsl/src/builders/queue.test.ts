@@ -1,6 +1,7 @@
 // packages/dsl/src/builders/queue.test.ts
 import { describe, it, expect } from 'vitest';
 import { queue } from './queue.js';
+import { task as createTask } from './task.js';
 
 describe('QueueBuilder', () => {
   it('creates queue with name', () => {
@@ -44,6 +45,29 @@ describe('QueueBuilder.examples', () => {
     const q = queue('tasks').examples();
     const built = q.build();
     expect(built.examples).toEqual([]);
+  });
+
+  it('accepts TaskBuilder array per SPEC-1-DSL.md', () => {
+    const q = queue('tasks').examples(
+      createTask('setup').files('src/setup.ts'),
+      createTask('feature').depends('setup').files('src/feature.ts'),
+    );
+    const built = q.build();
+    expect(built.examples).toHaveLength(2);
+    // TaskBuilder items should have id and files properties
+    const examples = built.examples as Array<{ id?: string; files?: string[] }>;
+    expect(examples[0]?.id).toBe('setup');
+    expect(examples[0]?.files).toContain('src/setup.ts');
+    expect(examples[1]?.id).toBe('feature');
+  });
+
+  it('accepts mixed ExampleTask and TaskBuilder', () => {
+    const q = queue('tasks').examples(
+      { title: 'Simple task', description: 'A simple task' },
+      createTask('complex').files('src/complex.ts').depends('other'),
+    );
+    const built = q.build();
+    expect(built.examples).toHaveLength(2);
   });
 });
 

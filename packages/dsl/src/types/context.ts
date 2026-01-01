@@ -1,5 +1,6 @@
 // packages/dsl/src/types/context.ts
 import { TaskStatus } from './primitives.js';
+import { Checkpoint } from './compiled.js';
 
 // Task type for runtime context
 export interface Task {
@@ -47,5 +48,5 @@ export interface Context {
   verifiedBy(agentName: string): Promise<boolean>;
   git: GitOps;
   uniqueId(): string;
-  lastCheckpoint: unknown;
+  lastCheckpoint: Checkpoint | null;
 }

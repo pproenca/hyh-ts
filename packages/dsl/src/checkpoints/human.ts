@@ -1,5 +1,5 @@
 // packages/dsl/src/checkpoints/human.ts
-import { Checkpoint } from '../types/compiled.js';
+import { Checkpoint, Choice } from '../types/compiled.js';
 import { randomUUID } from 'node:crypto';
 
 interface ApprovalOptions {
@@ -40,6 +40,14 @@ export const human = {
     return {
       id,
       type: 'approval',
+    };
+  },
+
+  choose(options: string[]): Choice {
+    return {
+      id: randomUUID(),
+      type: 'choice',
+      options,
     };
   },
 };

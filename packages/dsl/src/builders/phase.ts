@@ -9,6 +9,8 @@ import type { Context } from '../types/context.js';
 interface WorkflowBuilderLike {
   phase(name: string): PhaseBuilder;
   registerAgent(agent: AgentBuilder): void;
+  registerQueue(queue: QueueBuilder): void;
+  registerGate(gate: GateBuilder): void;
   build(): unknown;
 }
 
@@ -42,6 +44,7 @@ export class PhaseBuilder {
 
   queue(queue: QueueBuilder): this {
     this._queue = queue.build().name;
+    this._workflow.registerQueue(queue);
     return this;
   }
 
@@ -67,6 +70,7 @@ export class PhaseBuilder {
 
   populates(queue: QueueBuilder): this {
     this._populates = queue.build().name;
+    this._workflow.registerQueue(queue);
     return this;
   }
 
@@ -77,11 +81,13 @@ export class PhaseBuilder {
 
   gate(gate: GateBuilder): this {
     this._gate = gate.build().name;
+    this._workflow.registerGate(gate);
     return this;
   }
 
   then(queue: QueueBuilder): this {
     this._then = queue.build().name;
+    this._workflow.registerQueue(queue);
     return this;
   }
 

@@ -82,6 +82,47 @@ const qualityGate = gate('quality')
   .onFail(correct.retry({ max: 3 }))
   .onFailFinal(correct.escalate('human'));
 
-// Placeholder - will be implemented in next tasks
+// === WORKFLOW ===
+
 export const ralphWiggumWorkflow = workflow('ralph-wiggum')
+  .resumable()
+  .orchestrator(interviewer)
+
+  // Phase 1: Discovery
+  // Deep interview to build SPEC.md with evolving mental model
+  .phase('discovery')
+    .agent(interviewer)
+    .expects('Read', 'Grep', 'Glob', 'AskUserQuestion')
+    .forbids('Write', 'Edit')
+    .output('docs/SPEC.md')
+    .checkpoint(human.approval('Interview complete. Ready to refine spec?'))
+
+  // Phase 2: Refinement
+  // Section-by-section review with human feedback
+  .phase('refinement')
+    .agent(refiner)
+    .requires('docs/SPEC.md')
+    .populates(specSections)
+    .checkpoint(human.approval('Spec approved. Ready to plan implementation?'))
+
+  // Phase 3: Planning
+  // Orchestrator parses SPEC.md to create implementation tasks
+  .phase('planning')
+    .agent(interviewer) // Reuse interviewer as planner (read-only analysis)
+    .requires('docs/SPEC.md')
+    .expects('Read')
+    .forbids('Write', 'Edit')
+    .populates(implementationTasks)
+
+  // Phase 4: Implementation
+  // Wave-based parallel TDD execution
+  .phase('implementation')
+    .agent(implementer)
+    .queue(implementationTasks)
+    .parallel()
+    .gate(qualityGate)
+
   .build();
+
+// Compile and export
+compile(ralphWiggumWorkflow);

@@ -14,6 +14,8 @@ interface MockWorkflowBuilder {
   addPhase: () => void;
   phase: (name: string) => PhaseBuilder;
   registerAgent: (agent: AgentBuilder) => void;
+  registerQueue: () => void;
+  registerGate: () => void;
   build: () => CompiledWorkflow;
 }
 
@@ -24,6 +26,8 @@ describe('PhaseBuilder', () => {
       addPhase: () => {},
       phase: (name: string) => new PhaseBuilder(name, mock),
       registerAgent: () => {},
+      registerQueue: () => {},
+      registerGate: () => {},
       build: () => ({}) as CompiledWorkflow,
     };
     return mock;

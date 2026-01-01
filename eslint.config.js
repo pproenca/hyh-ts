@@ -21,4 +21,11 @@ export default [
       'no-console': 'off',
     },
   },
+  // Relax any warnings in test files where mocking often requires any
+  {
+    files: ['packages/*/src/**/*.test.ts'],
+    rules: {
+      '@typescript-eslint/no-explicit-any': 'off',
+    },
+  },
 ];

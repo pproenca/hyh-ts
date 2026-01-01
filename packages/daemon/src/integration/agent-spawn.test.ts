@@ -1,5 +1,5 @@
 // packages/daemon/src/integration/agent-spawn.test.ts
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { Daemon } from '../core/daemon.js';
 import { AgentManager } from '../agents/manager.js';
 import * as fs from 'node:fs/promises';

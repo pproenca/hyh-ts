@@ -3,7 +3,6 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 import * as os from 'node:os';
-import { Command } from 'commander';
 
 describe('init command', () => {
   it('exports createWorkflowTemplate', async () => {

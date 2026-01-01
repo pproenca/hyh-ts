@@ -1,6 +1,6 @@
 // packages/dsl/src/builders/queue.test.ts
 import { describe, it, expect } from 'vitest';
-import { queue, QueueBuilder } from './queue.js';
+import { queue } from './queue.js';
 
 describe('QueueBuilder', () => {
   it('creates queue with name', () => {

@@ -12,7 +12,7 @@ describe('EventLoop', () => {
       heartbeatMonitor: { getOverdueAgents: vi.fn().mockReturnValue([]) },
     };
 
-    const eventLoop = new EventLoop(mockDaemon as any, { tickInterval: 10 });
+    const eventLoop = new EventLoop(mockDaemon as Daemon, { tickInterval: 10 });
 
     // Run one tick
     await eventLoop.tick();

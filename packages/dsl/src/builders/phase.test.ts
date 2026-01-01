@@ -6,28 +6,43 @@ import { workflow } from './workflow.js';
 import { queue } from './queue.js';
 import { gate } from './gate.js';
 import { human } from '../checkpoints/human.js';
+import type { AgentBuilder } from './agent.js';
+import type { CompiledWorkflow } from '../types/compiled.js';
+
+// Mock interface matching WorkflowBuilderLike from phase.ts
+interface MockWorkflowBuilder {
+  addPhase: () => void;
+  phase: (name: string) => PhaseBuilder;
+  registerAgent: (agent: AgentBuilder) => void;
+  build: () => CompiledWorkflow;
+}
 
 describe('PhaseBuilder', () => {
-  const mockWorkflow = {
-    addPhase: () => {},
-    phase: () => new PhaseBuilder('test', {} as any),
-    registerAgent: () => {},
-    build: () => ({} as any),
+  // Create a self-referential mock that satisfies the interface
+  const createMockWorkflow = (): MockWorkflowBuilder => {
+    const mock: MockWorkflowBuilder = {
+      addPhase: () => {},
+      phase: (name: string) => new PhaseBuilder(name, mock),
+      registerAgent: () => {},
+      build: () => ({}) as CompiledWorkflow,
+    };
+    return mock;
   };
+  const mockWorkflow = createMockWorkflow();
 
   it('creates phase with name', () => {
-    const p = new PhaseBuilder('explore', mockWorkflow as any);
+    const p = new PhaseBuilder('explore', mockWorkflow);
     expect(p.buildPhase().name).toBe('explore');
   });
 
   it('sets agent', () => {
     const orch = agent('orchestrator').model('opus');
-    const p = new PhaseBuilder('explore', mockWorkflow as any).agent(orch);
+    const p = new PhaseBuilder('explore', mockWorkflow).agent(orch);
     expect(p.buildPhase().agent).toBe('orchestrator');
   });
 
   it('sets expects and forbids', () => {
-    const p = new PhaseBuilder('explore', mockWorkflow as any)
+    const p = new PhaseBuilder('explore', mockWorkflow)
       .expects('Read', 'Grep')
       .forbids('Write', 'Edit');
 
@@ -37,7 +52,7 @@ describe('PhaseBuilder', () => {
   });
 
   it('sets outputs and requires', () => {
-    const p = new PhaseBuilder('plan', mockWorkflow as any)
+    const p = new PhaseBuilder('plan', mockWorkflow)
       .requires('architecture.md')
       .output('plan.md', 'tasks.md');
 

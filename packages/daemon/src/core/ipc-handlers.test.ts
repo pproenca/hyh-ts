@@ -1,6 +1,6 @@
 // packages/daemon/src/core/ipc-handlers.test.ts
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { registerIPCHandlers, type IPCHandlerDeps } from './ipc-handlers.js';
+import { registerIPCHandlers } from './ipc-handlers.js';
 import { TaskStatus } from '../types/state.js';
 
 describe('registerIPCHandlers', () => {

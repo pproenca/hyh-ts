@@ -51,7 +51,7 @@ describe('Claude CLI check', () => {
 describe('EventLoop integration', () => {
   it('should start event loop when daemon starts', async () => {
     // Verify EventLoop is available and can be instantiated with Daemon
-    const { Daemon, EventLoop } = await import('@hyh/daemon');
+    const { EventLoop } = await import('@hyh/daemon');
     expect(EventLoop).toBeDefined();
     expect(typeof EventLoop).toBe('function');
 

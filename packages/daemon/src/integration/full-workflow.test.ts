@@ -401,8 +401,6 @@ describe('Full workflow E2E', () => {
     // Get AgentManager from daemon and verify it can use TaskPacketFactory
     await daemon.start();
 
-    const agentManager = daemon.getAgentManager();
-
     // AgentManager.createTaskPacketAsync should work when factory is provided
     // Note: Current daemon doesn't inject factory, but we can test the integration pattern
     const packet = await taskPacketFactory.createAsync({

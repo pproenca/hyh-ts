@@ -1,5 +1,5 @@
 // packages/cli/src/commands/dev.test.ts
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { registerDevCommand } from './dev.js';
 import { Command } from 'commander';
 

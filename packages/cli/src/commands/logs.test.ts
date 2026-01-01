@@ -1,5 +1,5 @@
 // packages/cli/src/commands/logs.test.ts
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 
 // Mock IPCClient
 vi.mock('../ipc/client.js', () => ({

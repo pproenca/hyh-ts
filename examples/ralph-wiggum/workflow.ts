@@ -1,9 +1,44 @@
-// examples/ralph-wiggum/workflow.ts
-// Ralph Wiggum: A 4-phase workflow for AI-driven software generation
-// 1. Discovery - Deep interview to understand requirements
-// 2. Refinement - Section-by-section human review
-// 3. Planning - Generate implementation plan
-// 4. Implementation - Wave-based TDD loop
+/**
+ * Ralph Wiggum Workflow
+ *
+ * A 4-phase workflow for AI-driven software generation, inspired by
+ * https://ghuntley.com/ralph/
+ *
+ * ## Phases
+ *
+ * 1. **Discovery** - Deep interview builds SPEC.md
+ *    - Interviewer asks probing questions with AskUserQuestion
+ *    - Evolving mental model based on user answers
+ *    - Proactively covers NFRs (performance, security, scale)
+ *    - Cannot write code (inv.noCode)
+ *
+ * 2. **Refinement** - Section-by-section spec review
+ *    - Refiner presents each section to user
+ *    - User confirms, edits, or requests changes
+ *    - Continues until explicit approval
+ *
+ * 3. **Planning** - Parse SPEC.md into tasks
+ *    - Analyzes spec structure to identify task boundaries
+ *    - Creates implementation task queue with dependencies
+ *
+ * 4. **Implementation** - Wave-based TDD loop
+ *    - Tasks grouped by file overlap into waves
+ *    - Each wave executes in parallel (worktree per task)
+ *    - TDD invariant: test before impl
+ *    - Quality gate: all tests pass + lint clean
+ *
+ * ## Usage
+ *
+ * ```bash
+ * hyh run examples/ralph-wiggum/workflow.ts
+ * ```
+ *
+ * ## Escalation
+ *
+ * - No progress in 15min → prompt, then escalate to human
+ * - TDD violation → prompt, restart, escalate
+ * - Quality gate fails 3x → escalate to human
+ */
 
 import {
   workflow,

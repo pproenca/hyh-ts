@@ -9,7 +9,7 @@ export function registerDevCommand(program: Command): void {
     .description('Run workflow in development mode with watch')
     .argument('[workflow]', 'Path to workflow.ts', 'workflow.ts')
     .option('--port <port>', 'Socket port for connection')
-    .action(async (workflowPath: string, options: { port?: string }) => {
+    .action(async (workflowPath: string, _options: { port?: string }) => {
       const absolutePath = path.resolve(workflowPath);
 
       if (!fs.existsSync(absolutePath)) {

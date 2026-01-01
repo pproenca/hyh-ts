@@ -2,6 +2,7 @@ import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 import { createReadStream } from 'node:fs';
 import { createInterface } from 'node:readline';
+import { isNodeError } from '../utils/errors.js';
 
 export interface TrajectoryEvent {
   type: string;
@@ -33,7 +34,7 @@ export class TrajectoryLogger {
 
       return lines.slice(-n).map((line) => JSON.parse(line) as TrajectoryEvent);
     } catch (error) {
-      if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+      if (isNodeError(error) && error.code === 'ENOENT') {
         return [];
       }
       throw error;
@@ -56,7 +57,7 @@ export class TrajectoryLogger {
         }
       }
     } catch (error) {
-      if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+      if (isNodeError(error) && error.code === 'ENOENT') {
         return [];
       }
       throw error;
@@ -69,7 +70,7 @@ export class TrajectoryLogger {
     try {
       await fs.unlink(this.filePath);
     } catch (error) {
-      if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
+      if (!isNodeError(error) || error.code !== 'ENOENT') {
         throw error;
       }
     }

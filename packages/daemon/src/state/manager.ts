@@ -9,6 +9,7 @@ import {
   ClaimResult,
   TaskStatus,
 } from '../types/state.js';
+import { isNodeError } from '../utils/errors.js';
 
 export interface StateIssue {
   type: 'orphaned_task' | 'stale_agent' | 'invalid_reference';
@@ -42,7 +43,7 @@ export class StateManager {
         this.cachedState = WorkflowStateSchema.parse(data);
         return this.cachedState;
       } catch (error) {
-        if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+        if (isNodeError(error) && error.code === 'ENOENT') {
           this.cachedState = null;
           return null;
         }
@@ -165,7 +166,7 @@ export class StateManager {
       try {
         await fs.unlink(this.stateFile);
       } catch (error) {
-        if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
+        if (!isNodeError(error) || error.code !== 'ENOENT') {
           throw error;
         }
       }
@@ -219,7 +220,7 @@ export class StateManager {
       this.cachedState = WorkflowStateSchema.parse(data);
       return this.cachedState;
     } catch (error) {
-      if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+      if (isNodeError(error) && error.code === 'ENOENT') {
         return null;
       }
       throw error;

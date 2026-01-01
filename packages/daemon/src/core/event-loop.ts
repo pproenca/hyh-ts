@@ -24,24 +24,28 @@ export class EventLoop {
   private readonly daemon: Daemon | null;
   private readonly options: EventLoopOptions;
   private timer: NodeJS.Timeout | null = null;
-  private _isRunning = false;
+  private running = false;
 
   constructor(daemonOrOptions: Daemon | EventLoopOptions, options?: EventLoopOptions) {
     // Support both new signature (daemon, options) and legacy (options with onTick)
+    // Type assertions are safe due to the discriminated checks above each branch
     if (options !== undefined) {
+      // When options is provided as second arg, first arg must be Daemon
       this.daemon = daemonOrOptions as Daemon;
       this.options = options;
     } else if ('onTick' in daemonOrOptions) {
+      // Has onTick property, so it's EventLoopOptions (legacy signature)
       this.daemon = null;
       this.options = daemonOrOptions as EventLoopOptions;
     } else {
+      // No options and no onTick, so it's a Daemon with default options
       this.daemon = daemonOrOptions as Daemon;
       this.options = { tickInterval: 1000 };
     }
   }
 
   get isRunning(): boolean {
-    return this._isRunning;
+    return this.running;
   }
 
   async tick(): Promise<void> {
@@ -77,13 +81,15 @@ export class EventLoop {
   }
 
   start(): void {
-    if (this._isRunning) return;
-    this._isRunning = true;
+    if (this.running) {
+      return;
+    }
+    this.running = true;
     this.scheduleTick();
   }
 
   stop(): void {
-    this._isRunning = false;
+    this.running = false;
     if (this.timer) {
       clearTimeout(this.timer);
       this.timer = null;
@@ -91,7 +97,9 @@ export class EventLoop {
   }
 
   private scheduleTick(): void {
-    if (!this._isRunning) return;
+    if (!this.running) {
+      return;
+    }
     this.timer = setTimeout(async () => {
       try {
         if (this.daemon) {

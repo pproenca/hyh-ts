@@ -11,6 +11,7 @@ const BaseEventSchema = z.object({
 export const ToolUseEventSchema = BaseEventSchema.extend({
   type: z.literal('tool_use'),
   tool: z.string(),
+  // Tool arguments are arbitrary JSON from Claude's tool calls; shape varies per tool
   args: z.record(z.string(), z.unknown()).optional(),
   path: z.string().optional(),
 });
@@ -21,6 +22,7 @@ export type ToolUseEvent = z.infer<typeof ToolUseEventSchema>;
 export const ToolResultEventSchema = BaseEventSchema.extend({
   type: z.literal('tool_result'),
   tool: z.string(),
+  // Tool results are arbitrary JSON returned by tools; shape varies per tool
   result: z.unknown(),
 });
 

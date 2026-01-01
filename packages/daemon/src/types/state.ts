@@ -1,6 +1,44 @@
 // packages/daemon/src/types/state.ts
 import { z } from 'zod';
 
+// Branded types for type-safe record keys
+declare const TaskIdBrand: unique symbol;
+declare const AgentIdBrand: unique symbol;
+declare const CheckpointIdBrand: unique symbol;
+declare const ViolationTypeBrand: unique symbol;
+
+/** Branded type for task identifiers */
+export type TaskId = string & { readonly [TaskIdBrand]: typeof TaskIdBrand };
+
+/** Branded type for agent identifiers */
+export type AgentId = string & { readonly [AgentIdBrand]: typeof AgentIdBrand };
+
+/** Branded type for checkpoint identifiers */
+export type CheckpointId = string & { readonly [CheckpointIdBrand]: typeof CheckpointIdBrand };
+
+/** Branded type for violation type names */
+export type ViolationType = string & { readonly [ViolationTypeBrand]: typeof ViolationTypeBrand };
+
+/** Create a TaskId from a string */
+export function taskId(id: string): TaskId {
+  return id as TaskId;
+}
+
+/** Create an AgentId from a string */
+export function agentId(id: string): AgentId {
+  return id as AgentId;
+}
+
+/** Create a CheckpointId from a string */
+export function checkpointId(id: string): CheckpointId {
+  return id as CheckpointId;
+}
+
+/** Create a ViolationType from a string */
+export function violationType(type: string): ViolationType {
+  return type as ViolationType;
+}
+
 // Task status enum
 export const TaskStatus = {
   PENDING: 'pending',
@@ -37,6 +75,7 @@ export const TaskStateSchema = z.object({
 export type TaskState = z.infer<typeof TaskStateSchema>;
 
 // Queue state schema
+// Note: z.record uses string keys at runtime; use TaskId branded type in application code
 export const QueueStateSchema = z.object({
   tasks: z.record(z.string(), TaskStateSchema),
 });
@@ -52,6 +91,7 @@ export const AgentStateSchema = z.object({
   pid: z.number().nullable().default(null),
   sessionId: z.string().nullable().default(null),
   lastHeartbeat: z.number().nullable().default(null),
+  // Note: Keys are ViolationType branded strings at runtime; Zod validates as string
   violationCounts: z.record(z.string(), z.number()).default({}),
 });
 
@@ -93,7 +133,19 @@ export const TodoProgressSchema = z.object({
 
 export type TodoProgress = z.infer<typeof TodoProgressSchema>;
 
+// Human action schema for pending human interventions
+export const HumanActionSchema = z.object({
+  type: z.string(),
+  message: z.string(),
+  checkpointId: z.string().optional(),
+  timestamp: z.number(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
+});
+
+export type HumanAction = z.infer<typeof HumanActionSchema>;
+
 // Full workflow state schema
+// Note: z.record uses string keys at runtime; use branded types (TaskId, AgentId, CheckpointId) in application code
 export const WorkflowStateSchema = z.object({
   workflowId: z.string(),
   workflowName: z.string(),
@@ -103,7 +155,7 @@ export const WorkflowStateSchema = z.object({
   tasks: z.record(z.string(), TaskStateSchema).default({}),
   agents: z.record(z.string(), AgentStateSchema).default({}),
   checkpoints: z.record(z.string(), CheckpointStateSchema).default({}),
-  pendingHumanActions: z.array(z.unknown()).default([]),
+  pendingHumanActions: z.array(HumanActionSchema).default([]),
   recentLogs: z.array(LogEntrySchema).optional(),
   todo: TodoProgressSchema.optional(),
 });

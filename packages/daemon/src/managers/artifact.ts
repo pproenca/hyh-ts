@@ -1,5 +1,6 @@
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
+import { isNodeError } from '../utils/errors.js';
 
 export interface Artifact {
   taskId: string;
@@ -40,7 +41,7 @@ export class ArtifactManager {
       const content = await fs.readFile(filePath, 'utf-8');
       return this.parseMarkdown(content);
     } catch (error) {
-      if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+      if (isNodeError(error) && error.code === 'ENOENT') {
         return null;
       }
       throw error;

@@ -21,9 +21,10 @@ export class CheckerChain {
   private checkers: Checker[];
 
   constructor(checkers: Checker[] = []) {
-    this.checkers = checkers;
+    this.checkers = [...checkers];
   }
 
+  /** Number of checkers in the chain. Exposed as getter to keep checkers array encapsulated. */
   get checkerCount(): number {
     return this.checkers.length;
   }

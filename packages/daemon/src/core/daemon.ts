@@ -18,6 +18,7 @@ import { EventProcessor } from './event-processor.js';
 import { AgentLifecycle } from './agent-lifecycle.js';
 import { WorkflowCoordinator } from './workflow-coordinator.js';
 import { registerIPCHandlers } from './ipc-handlers.js';
+import type { TaskClaimRequest, TaskCompleteRequest } from '../types/ipc.js';
 
 interface DaemonOptions {
   worktreeRoot: string;
@@ -382,8 +383,9 @@ export class Daemon {
     });
 
     // Task claim (not in ipc-handlers.ts)
+    // Note: request is already validated by IPCRequestSchema in dispatch()
     this.ipcServer.registerHandler('task_claim', async (request: unknown) => {
-      const req = request as { workerId: string };
+      const req = request as TaskClaimRequest;
       const result = await this.stateManager.claimTask(req.workerId);
 
       if (result.task) {
@@ -405,8 +407,9 @@ export class Daemon {
     });
 
     // Task complete (not in ipc-handlers.ts)
+    // Note: request is already validated by IPCRequestSchema in dispatch()
     this.ipcServer.registerHandler('task_complete', async (request: unknown) => {
-      const req = request as { taskId: string; workerId: string; force?: boolean };
+      const req = request as TaskCompleteRequest;
       await this.stateManager.completeTask(req.taskId, req.workerId, req.force);
 
       await this.trajectory.log({

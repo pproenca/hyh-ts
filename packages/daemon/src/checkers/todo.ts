@@ -1,6 +1,7 @@
 // packages/daemon/src/checkers/todo.ts
 import * as fs from 'node:fs';
 import type { Checker, Violation, CheckContext, TrajectoryEvent } from './types.js';
+import { isNodeError } from '../utils/errors.js';
 
 export interface TodoCheckerOptions {
   file: string;
@@ -43,7 +44,7 @@ export class TodoChecker implements Checker {
 
       return null;
     } catch (error) {
-      if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+      if (isNodeError(error) && error.code === 'ENOENT') {
         return null;
       }
       throw error;

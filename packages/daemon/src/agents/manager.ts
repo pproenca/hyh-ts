@@ -23,7 +23,7 @@ export interface AgentManagerOptions {
 
 export class AgentManager {
   private readonly worktreeRoot: string;
-  private agents: Map<string, AgentProcess> = new Map();
+  private readonly agents: Map<string, AgentProcess> = new Map();
   private readonly taskPacketFactory: TaskPacketFactory | undefined;
 
   constructor(options: AgentManagerOptions | string) {
@@ -92,7 +92,9 @@ export class AgentManager {
 
   async kill(agentId: string): Promise<void> {
     const agent = this.agents.get(agentId);
-    if (!agent) return;
+    if (!agent) {
+      return;
+    }
 
     await agent.stop();
     this.agents.delete(agentId);

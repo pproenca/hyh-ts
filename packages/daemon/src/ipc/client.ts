@@ -1,6 +1,7 @@
 // packages/daemon/src/ipc/client.ts
 import * as net from 'node:net';
 import type { IPCRequest, IPCResponse } from '../types/ipc.js';
+import { IPCResponseSchema } from '../types/ipc.js';
 
 export type EventCallback = (event: unknown) => void;
 
@@ -37,18 +38,25 @@ export class IPCClient {
 
         for (const line of lines) {
           if (line.trim()) {
-            const message = JSON.parse(line) as IPCResponse | { type: 'event'; event: string; data: unknown };
+            const parsed = JSON.parse(line) as Record<string, unknown>;
 
-            // Check if it's an event notification
-            if ('type' in message && message.type === 'event') {
-              this.emitEvent(message.event, message.data);
+            // Check if it's an event notification (not validated by IPCResponseSchema)
+            if ('type' in parsed && parsed.type === 'event') {
+              const event = parsed as { type: 'event'; event: string; data: unknown };
+              this.emitEvent(event.event, event.data);
             } else if (this.pendingResolve) {
-              // It's a response to a request - clear timeout and resolve
+              // Validate response with Zod schema
+              const result = IPCResponseSchema.safeParse(parsed);
+              const response: IPCResponse = result.success
+                ? result.data
+                : { status: 'error', message: `Invalid response: ${result.error.message}` };
+
+              // Clear timeout and resolve
               if (this.requestTimer) {
                 clearTimeout(this.requestTimer);
                 this.requestTimer = null;
               }
-              this.pendingResolve(message as IPCResponse);
+              this.pendingResolve(response);
               this.pendingResolve = null;
               this.pendingReject = null;
             }
@@ -67,7 +75,8 @@ export class IPCClient {
   }
 
   async request(req: IPCRequest): Promise<IPCResponse> {
-    if (!this.socket) {
+    const socket = this.socket;
+    if (!socket) {
       throw new Error('Not connected');
     }
 
@@ -82,23 +91,26 @@ export class IPCClient {
         reject(new Error(`Request timed out after ${this.requestTimeout}ms`));
       }, this.requestTimeout);
 
-      this.socket!.write(JSON.stringify(req) + '\n');
+      socket.write(JSON.stringify(req) + '\n');
     });
   }
 
   onEvent(eventType: string, callback: EventCallback): void {
-    if (!this.eventListeners.has(eventType)) {
-      this.eventListeners.set(eventType, new Set());
+    let listeners = this.eventListeners.get(eventType);
+    if (!listeners) {
+      listeners = new Set();
+      this.eventListeners.set(eventType, listeners);
     }
-    this.eventListeners.get(eventType)!.add(callback);
+    listeners.add(callback);
   }
 
   offEvent(eventType: string, callback?: EventCallback): void {
-    if (!this.eventListeners.has(eventType)) {
+    const listeners = this.eventListeners.get(eventType);
+    if (!listeners) {
       return;
     }
     if (callback) {
-      this.eventListeners.get(eventType)!.delete(callback);
+      listeners.delete(callback);
     } else {
       this.eventListeners.delete(eventType);
     }

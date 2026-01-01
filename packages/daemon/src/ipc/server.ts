@@ -3,7 +3,7 @@ import * as net from 'node:net';
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 import { EventEmitter } from 'node:events';
-import { IPCRequestSchema, IPCResponse } from '../types/ipc.js';
+import { IPCRequestSchema, type IPCResponse, type SubscribeRequest } from '../types/ipc.js';
 
 type RequestHandler = (request: unknown, socket: net.Socket) => Promise<unknown>;
 
@@ -19,14 +19,17 @@ export class IPCServer extends EventEmitter {
     this.socketPath = socketPath;
 
     // Register built-in subscribe handler
+    // Note: request is already validated by IPCRequestSchema in dispatch()
     this.registerHandler(
       'subscribe',
       async (request: unknown, socket: net.Socket) => {
-        const { channel } = request as { channel: string };
-        if (!this.subscriptions.has(channel)) {
-          this.subscriptions.set(channel, new Set());
+        const { channel } = request as SubscribeRequest;
+        let subscribers = this.subscriptions.get(channel);
+        if (!subscribers) {
+          subscribers = new Set();
+          this.subscriptions.set(channel, subscribers);
         }
-        this.subscriptions.get(channel)!.add(socket);
+        subscribers.add(socket);
 
         // Clean up subscription on disconnect
         socket.once('close', () => {
@@ -76,9 +79,10 @@ export class IPCServer extends EventEmitter {
     this.clients.clear();
 
     // Close server
-    if (this.server) {
+    const server = this.server;
+    if (server) {
       return new Promise((resolve) => {
-        this.server!.close(() => {
+        server.close(() => {
           this.server = null;
           // Clean up socket file
           fs.unlink(this.socketPath).catch(() => {});

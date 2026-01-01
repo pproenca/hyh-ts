@@ -83,9 +83,20 @@ export const IPCRequestSchema = z.discriminatedUnion('command', [
 
 export type IPCRequest = z.infer<typeof IPCRequestSchema>;
 
+// Individual request types for type-safe handler implementations
+export type TaskClaimRequest = z.infer<typeof TaskClaimRequestSchema>;
+export type TaskCompleteRequest = z.infer<typeof TaskCompleteRequestSchema>;
+export type SubscribeRequest = z.infer<typeof SubscribeRequestSchema>;
+export type HeartbeatRequest = z.infer<typeof HeartbeatRequestSchema>;
+export type GetLogsRequest = z.infer<typeof GetLogsRequestSchema>;
+export type ExecRequest = z.infer<typeof ExecRequestSchema>;
+export type PlanImportRequest = z.infer<typeof PlanImportRequestSchema>;
+export type StatusRequest = z.infer<typeof StatusRequestSchema>;
+
 // Response types
 export const OkResponseSchema = z.object({
   status: z.literal('ok'),
+  // Response data varies by command; runtime type depends on which handler processed the request
   data: z.unknown(),
 });
 
@@ -102,13 +113,17 @@ export const IPCResponseSchema = z.discriminatedUnion('status', [
 export type IPCResponse = z.infer<typeof IPCResponseSchema>;
 
 // Push events (daemon -> clients)
+// Note: Push events use z.unknown() for payloads to avoid circular imports.
+// Consumers should validate with specific schemas (WorkflowStateSchema, TrajectoryEventSchema, etc.)
 export const StateChangedEventSchema = z.object({
   type: z.literal('state_changed'),
+  // Full WorkflowState; use WorkflowStateSchema from types/state.ts for validation
   state: z.unknown(),
 });
 
 export const TrajectoryEventPushSchema = z.object({
   type: z.literal('trajectory_event'),
+  // Full TrajectoryEvent; use TrajectoryEventSchema from types/trajectory.ts for validation
   event: z.unknown(),
 });
 
@@ -120,6 +135,7 @@ export const AgentOutputEventSchema = z.object({
 
 export const HumanRequiredEventSchema = z.object({
   type: z.literal('human_required'),
+  // Full CheckpointState; use CheckpointStateSchema from types/state.ts for validation
   checkpoint: z.unknown(),
 });
 

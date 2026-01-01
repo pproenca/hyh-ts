@@ -248,11 +248,6 @@ With 564 tests passing, comprehensive behavioral tests now cover all 182 user st
 | `hyh init` updates .gitignore | init.test.ts | ✅ | Passing |
 | `hyh validate` checks DSL | validate.test.ts | ✅ | Passing |
 | `hyh validate` workflow validation | validate.test.ts | ✅ | Passing |
-| `hyh demo` command | demo.test.ts | ✅ | Passing |
-| Banner component | Banner.test.tsx | ✅ | Passing |
-| Builder component | Builder.test.tsx | ✅ | Passing |
-| Simulation component | Simulation.test.tsx | ✅ | Passing |
-| useSimulation hook | useSimulation.test.ts | ✅ | Passing |
 
 ---
 
@@ -369,7 +364,7 @@ All categories now have comprehensive test coverage:
 6. **State Management** - Atomic writes, crash recovery, task claiming, orphan detection
 7. **IPC Protocol** - All commands, subscription, multiple clients, request validation
 8. **TUI Components** - All tabs, approval dialog, progress bar, hooks
-9. **CLI Commands** - init, validate, run, task, simulate, demo
+9. **CLI Commands** - init, validate, run, task, simulate
 10. **Anti-Abandonment** - Todo checker, markdown parsing, violation correction
 11. **Context Budget** - Token estimation, threshold detection, compact handling
 12. **Artifact System** - Save, load, dependencies, plan import

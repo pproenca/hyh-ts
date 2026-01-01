@@ -8,9 +8,8 @@ export function registerDevCommand(program: Command): void {
     .command('dev')
     .description('Run workflow in development mode with watch')
     .argument('[workflow]', 'Path to workflow.ts', 'workflow.ts')
-    .option('--no-tui', 'Disable TUI, use log output')
-    .option('--port <port>', 'Socket port for TUI connection')
-    .action(async (workflowPath: string, options: { tui: boolean; port?: string }) => {
+    .option('--port <port>', 'Socket port for connection')
+    .action(async (workflowPath: string, options: { port?: string }) => {
       const absolutePath = path.resolve(workflowPath);
 
       if (!fs.existsSync(absolutePath)) {
@@ -44,17 +43,6 @@ export function registerDevCommand(program: Command): void {
         // Start event loop
         const eventLoop = new EventLoop(daemon, { tickInterval: 1000 });
         eventLoop.start();
-
-        // Optionally start TUI
-        if (options.tui !== false) {
-          try {
-            const { startTUI } = await import('@hyh/tui');
-            startTUI(daemon.getSocketPath());
-          } catch {
-            // TUI package not installed or failed to load - fall back to headless mode
-            console.log('TUI not available, running headless');
-          }
-        }
 
         // Handle shutdown
         process.on('SIGINT', async () => {

@@ -6,7 +6,6 @@ import { pathToFileURL } from 'node:url';
 import type { HyhConfig } from '@hyh/dsl';
 
 interface RunOptions {
-  tui: boolean;
   config?: string;
 }
 
@@ -42,7 +41,6 @@ export function registerRunCommand(program: Command): void {
     .command('run')
     .description('Run a workflow')
     .argument('<workflow>', 'Path to workflow.ts file')
-    .option('--no-tui', 'Run without TUI (headless mode)')
     .option('-c, --config <path>', 'Path to config file')
     .action(async (workflowPath: string, options: RunOptions) => {
       const absolutePath = path.resolve(workflowPath);
@@ -138,16 +136,9 @@ export function registerRunCommand(program: Command): void {
           }
         }
 
-        if (!options.tui) {
-          console.log('Running in headless mode. Press Ctrl+C to stop.');
-        } else {
-          // Load workflow into daemon
-          await daemon.loadWorkflow(path.join(outputDir, 'workflow.json'));
-
-          // Start TUI
-          const { startTUI } = await import('@hyh/tui');
-          startTUI(daemon.getSocketPath());
-        }
+        // Load workflow into daemon
+        await daemon.loadWorkflow(path.join(outputDir, 'workflow.json'));
+        console.log('Running in headless mode. Press Ctrl+C to stop.');
       } catch (error) {
         console.error('Failed to run workflow:', error);
         process.exit(1);

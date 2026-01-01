@@ -25,14 +25,6 @@ describe('hyh run config loading', () => {
   });
 });
 
-describe('run command with TUI', () => {
-  it('should import and call startTUI when --tui is enabled', async () => {
-    // This test verifies the import path works
-    const { startTUI } = await import('@hyh/tui');
-    expect(typeof startTUI).toBe('function');
-  });
-});
-
 describe('plan import', () => {
   it('should have PlanImporter available from daemon', async () => {
     const { PlanImporter } = await import('@hyh/daemon');

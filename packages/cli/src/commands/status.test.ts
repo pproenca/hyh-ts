@@ -14,14 +14,14 @@ describe('hyh status', () => {
     expect(cmd).toBeDefined();
   });
 
-  it('should accept --tui flag', () => {
+  it('should accept --quiet flag', () => {
     const program = new Command();
     registerStatusCommand(program);
     const cmd = program.commands.find((c) => c.name() === 'status');
     expect(cmd).toBeDefined();
 
-    // Verify --tui option was registered
-    const tuiOption = cmd?.options.find((opt) => opt.long === '--tui');
-    expect(tuiOption).toBeDefined();
+    // Verify --quiet option was registered
+    const quietOption = cmd?.options.find((opt) => opt.long === '--quiet');
+    expect(quietOption).toBeDefined();
   });
 });

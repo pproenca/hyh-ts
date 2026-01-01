@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**hyh (Hold Your Horses)** is a TypeScript workflow orchestration system for multi-agent Claude Code execution. It consists of a DSL for defining workflows, a daemon runtime engine, a CLI, and an Ink-based TUI.
+**hyh (Hold Your Horses)** is a TypeScript workflow orchestration system for multi-agent Claude Code execution. It consists of a DSL for defining workflows, a daemon runtime engine, and a CLI.
 
 ## Commands
 
@@ -42,8 +42,7 @@ pnpm lint
 packages/
 ├── dsl/      # Fluent builder DSL for workflow definitions
 ├── daemon/   # Runtime engine (state, agents, checkers, IPC)
-├── cli/      # Commander.js CLI commands
-└── tui/      # React + Ink terminal UI
+└── cli/      # Commander.js CLI commands
 ```
 
 ### Core Runtime Flow
@@ -58,7 +57,7 @@ Daemon
 ├── CheckerChain      # Validates invariants (TDD, file scope, context budget)
 ├── CorrectionApplicator  # Enforces policy via prompt injection
 ├── TrajectoryLogger  # JSONL event stream to .hyh/trajectory.jsonl
-└── IPCServer         # Unix socket RPC for CLI/TUI communication
+└── IPCServer         # Unix socket RPC for CLI communication
 ```
 
 ### Key Patterns

@@ -12,9 +12,3 @@ catalog:
 
   # Testing
   vitest: ^2.1.9
-
-  # React ecosystem (tui)
-  react: ^18.3.1
-  '@types/react': ^18.0.0
-  react-dom: ^18.3.1
-  '@testing-library/react': ^16.3.1

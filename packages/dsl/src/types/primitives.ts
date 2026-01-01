@@ -12,6 +12,10 @@ const UNIT_MS: Record<DurationUnit, number> = {
   d: 24 * 60 * 60 * 1000,
 };
 
+function isDurationUnit(u: string): u is DurationUnit {
+  return u === 's' || u === 'm' || u === 'h' || u === 'd';
+}
+
 export function parseDuration(duration: Duration): number {
   if (typeof duration === 'number') {
     return duration;
@@ -23,7 +27,11 @@ export function parseDuration(duration: Duration): number {
   }
 
   const [, value, unit] = match;
-  return parseInt(value!, 10) * UNIT_MS[unit as DurationUnit];
+  // Safe: regex capture groups guarantee value and unit exist when match succeeds
+  if (!value || !unit || !isDurationUnit(unit)) {
+    throw new Error(`Invalid duration: ${duration}`);
+  }
+  return parseInt(value, 10) * UNIT_MS[unit];
 }
 
 // Glob pattern for file matching
@@ -59,7 +67,11 @@ export function parseToolSpec(spec: ToolSpec): ParsedToolSpec {
       throw new Error(`Invalid tool spec: ${spec}`);
     }
     const [, tool, pattern] = match;
-    const result: ParsedToolSpec = { tool: tool! };
+    // Safe: regex requires at least one \w+ char, so tool is guaranteed
+    if (!tool) {
+      throw new Error(`Invalid tool spec: ${spec}`);
+    }
+    const result: ParsedToolSpec = { tool };
     if (pattern) {
       result.pattern = pattern;
     }

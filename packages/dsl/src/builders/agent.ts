@@ -106,10 +106,12 @@ export class AgentBuilder {
     if (!this._violations[type]) {
       this._violations[type] = [];
     }
+    const violations = this._violations[type];
     if ('after' in correctionOrOptions && maybeCorrection) {
-      this._violations[type]!.push(maybeCorrection);
+      violations.push(maybeCorrection);
     } else {
-      this._violations[type]!.push(correctionOrOptions as Correction);
+      // Safe: type narrowing - 'after' not in correctionOrOptions means it's Correction
+      violations.push(correctionOrOptions as Correction);
     }
     return this;
   }
@@ -157,6 +159,7 @@ class HeartbeatBuilder {
     } else {
       this._config.corrections.push({
         count: 1,
+        // Safe: type narrowing - if not number, must be Correction
         correction: countOrCorrection as Correction,
       });
     }

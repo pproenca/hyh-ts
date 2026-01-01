@@ -19,7 +19,7 @@ export class QueueBuilder {
     const fnStr = predicate.toString();
     // Extract the expression (simplified - assumes arrow function)
     const match = fnStr.match(/=>\s*(.+)$/s);
-    this._readyPredicate = match ? match[1]!.trim() : 'true';
+    this._readyPredicate = match?.[1]?.trim() ?? 'true';
     return this;
   }
 
@@ -28,7 +28,7 @@ export class QueueBuilder {
     const fnStr = predicate.toString();
     // Extract the expression (simplified - assumes arrow function)
     const match = fnStr.match(/=>\s*(.+)$/s);
-    this._donePredicate = match ? match[1]!.trim() : 'true';
+    this._donePredicate = match?.[1]?.trim() ?? 'true';
     return this;
   }
 

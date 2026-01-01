@@ -27,8 +27,8 @@ export function _getUnderlyingCorrection(chainable: ChainableCorrection): Correc
 
 // Convert a Correction into chainable form using Proxy for lazy access
 function makeChainable(correction: Correction): ChainableCorrection {
-  // Create the base chainable method
-  const chainMethod = function (next: Correction): ChainableCorrection {
+  // Create the base chainable method as arrow function per style guide
+  const chainMethod = (next: Correction): ChainableCorrection => {
     // If next is a ChainableCorrection, get its underlying Correction
     const nextCorrection = underlyingCorrections.get(next as object) ?? next;
 
@@ -50,6 +50,7 @@ function makeChainable(correction: Correction): ChainableCorrection {
     get(target, prop) {
       // Handle function properties
       if (prop === 'call' || prop === 'apply' || prop === 'bind') {
+        // Safe: accessing standard Function properties through proxy
         return (target as unknown as Record<string | symbol, unknown>)[prop];
       }
       // Handle correction.then data access
@@ -57,6 +58,7 @@ function makeChainable(correction: Correction): ChainableCorrection {
         if (prop === 'then') {
           return makeChainable(correction.then).then;
         }
+        // Safe: dynamic property access on Correction object for proxy delegation
         return (correction.then as unknown as Record<string | symbol, unknown>)[prop];
       }
       return undefined;
@@ -64,10 +66,11 @@ function makeChainable(correction: Correction): ChainableCorrection {
     apply(target, thisArg, args) {
       return target.apply(thisArg, args as [Correction]);
     },
+  // Safe: Proxy returns ChainableThen interface for callable + property access
   }) as ChainableThen;
 
   // Build the result object conditionally to avoid undefined values
-  // Use type assertion since we're constructing this carefully
+  // Safe: result object carefully constructed to match ChainableCorrection interface
   const result = {
     type: correction.type,
     then: thenProxy,

@@ -34,6 +34,7 @@ export function registerTaskCommand(program: Command): void {
           process.exit(1);
         }
 
+        // Response data structure is guaranteed by daemon for task_claim command
         const data = response.data as { task: unknown; isRetry: boolean; isReclaim: boolean };
 
         if (!data.task) {

@@ -51,6 +51,7 @@ export function registerDevCommand(program: Command): void {
             const { startTUI } = await import('@hyh/tui');
             startTUI(daemon.getSocketPath());
           } catch {
+            // TUI package not installed or failed to load - fall back to headless mode
             console.log('TUI not available, running headless');
           }
         }

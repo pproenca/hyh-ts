@@ -38,6 +38,7 @@ export function registerStatusCommand(program: Command): void {
           process.exit(1);
         }
 
+        // Response data structure is guaranteed by daemon for status command
         const data = response.data as {
           active: boolean;
           summary: { total: number; completed: number; running: number; pending: number };

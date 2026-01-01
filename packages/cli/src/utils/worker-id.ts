@@ -17,7 +17,7 @@ export async function getWorkerId(): Promise<string> {
     const id = await fs.readFile(WORKER_ID_FILE, 'utf-8');
     return id.trim();
   } catch {
-    // Generate new ID
+    // Worker ID file doesn't exist yet - generate and persist a new one
     const id = `worker-${crypto.randomBytes(6).toString('hex')}`;
 
     // Persist atomically

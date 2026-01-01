@@ -28,13 +28,15 @@ export function registerLogsCommand(program: Command): void {
       try {
         await client.connect();
 
+        // IPC request type is validated by daemon; cast is safe for known commands
         const response = await client.request({
           command: 'get_logs',
           limit: parseInt(options.lines, 10),
           agentId: options.agent,
-        } as unknown as Parameters<typeof client.request>[0]);
+        } as Parameters<typeof client.request>[0]);
 
         if (response.status === 'ok') {
+          // Response data structure is guaranteed by daemon for get_logs command
           const logs = (response.data as { logs: LogEntry[] }).logs;
           for (const log of logs) {
             const time = new Date(log.timestamp).toLocaleTimeString();

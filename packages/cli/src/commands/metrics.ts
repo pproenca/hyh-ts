@@ -79,9 +79,10 @@ export function registerMetricsCommand(program: Command): void {
         let metrics: WorkflowMetrics;
         try {
           const content = await fs.readFile(metricsFile, 'utf-8');
+          // Metrics file contains JSON-serialized WorkflowMetrics
           metrics = JSON.parse(content) as WorkflowMetrics;
         } catch {
-          // Default empty metrics if file doesn't exist
+          // Metrics file doesn't exist or is invalid - use default empty metrics
           metrics = {
             totalDuration: 0,
             phaseDurations: {},

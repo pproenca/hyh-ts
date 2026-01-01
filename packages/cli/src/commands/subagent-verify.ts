@@ -35,7 +35,7 @@ export async function subagentVerify(options: SubagentVerifyOptions = {}): Promi
     }
     checks.push('todo');
   } catch {
-    // No todo.md is okay
+    // No todo.md file is acceptable - subagent may not use todos
   }
 
   // Run tests if requested
@@ -44,6 +44,7 @@ export async function subagentVerify(options: SubagentVerifyOptions = {}): Promi
       await execAsync('npm test', { cwd });
       checks.push('tests');
     } catch {
+      // Test command exited with non-zero status
       errors.push('Tests failed');
     }
   }
@@ -54,6 +55,7 @@ export async function subagentVerify(options: SubagentVerifyOptions = {}): Promi
       await execAsync('npm run typecheck', { cwd });
       checks.push('typecheck');
     } catch {
+      // Typecheck command exited with non-zero status
       errors.push('Typecheck failed');
     }
   }
@@ -64,6 +66,7 @@ export async function subagentVerify(options: SubagentVerifyOptions = {}): Promi
       await execAsync('npm run lint', { cwd });
       checks.push('lint');
     } catch {
+      // Lint command exited with non-zero status
       errors.push('Lint failed');
     }
   }

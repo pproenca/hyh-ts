@@ -15,7 +15,7 @@ export async function findSocketPath(): Promise<string | null> {
     await fs.access(cwdSocketPath);
     return cwdSocketPath;
   } catch {
-    // Socket for cwd doesn't exist, continue searching
+    // Socket for current working directory doesn't exist, fall through to search other sockets
   }
 
   // Fall back to first available socket
@@ -31,6 +31,7 @@ export async function findSocketPath(): Promise<string | null> {
     // Return first socket
     return path.join(socketsDir, firstSocket);
   } catch {
+    // Sockets directory doesn't exist or is inaccessible
     return null;
   }
 }

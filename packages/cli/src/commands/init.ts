@@ -61,7 +61,7 @@ export function registerInitCommand(program: Command): void {
         console.error('workflow.ts already exists');
         process.exit(1);
       } catch {
-        // File doesn't exist, good to proceed
+        // File doesn't exist - this is the expected case, proceed with creation
       }
 
       // Create workflow.ts

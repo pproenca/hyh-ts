@@ -26,10 +26,12 @@ export async function verifyComplete(options: VerifyOptions = {}): Promise<Verif
       errors.push(`${incomplete} incomplete todo items`);
     }
   } catch (error) {
-    if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
+    // Only ignore ENOENT (file not found) - re-throw other errors
+    const isNodeError = error instanceof Error && 'code' in error;
+    if (!isNodeError || (error as NodeJS.ErrnoException).code !== 'ENOENT') {
       throw error;
     }
-    // File doesn't exist - OK
+    // Todo file doesn't exist - acceptable, verification passes
   }
 
   return {

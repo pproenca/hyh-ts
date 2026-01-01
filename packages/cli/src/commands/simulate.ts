@@ -103,10 +103,14 @@ export function registerSimulateCommand(program: Command): void {
                 metrics.recordTaskComplete(agentName, 1000);
                 break;
               case 'violation':
+                // Event data invariant is always a string when type is 'violation'
                 metrics.recordViolation(event.data.invariant as string);
                 break;
               case 'tool_use':
                 metrics.recordTokens(100); // Estimate
+                break;
+              case 'correction':
+                // Correction events are tracked but not recorded in metrics
                 break;
             }
           }

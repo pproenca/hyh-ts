@@ -20,6 +20,7 @@ export function registerResumeCommand(program: Command): void {
       try {
         await fs.access(statePath);
       } catch {
+        // State file doesn't exist - workflow was never started
         console.error('No workflow state found. Start a workflow first with `hyh run`.');
         process.exit(1);
       }
@@ -28,6 +29,7 @@ export function registerResumeCommand(program: Command): void {
       try {
         await fs.access(workflowPath);
       } catch {
+        // Workflow file doesn't exist - needs compilation
         console.error('No compiled workflow found. Run `hyh compile` first.');
         process.exit(1);
       }
@@ -41,6 +43,7 @@ export function registerResumeCommand(program: Command): void {
           await client.connect();
           const response = await client.request({ command: 'get_state' });
           if (response.status === 'ok') {
+            // Response data structure is guaranteed by daemon for get_state command
             const data = response.data as { state: { currentPhase: string; workflowName: string } };
             console.log(`Connected to workflow: ${data.state.workflowName}`);
             console.log(`Current phase: ${data.state.currentPhase}`);
@@ -48,6 +51,7 @@ export function registerResumeCommand(program: Command): void {
           await client.disconnect();
           return;
         } catch {
+          // Connection failed - daemon socket exists but daemon not responding
           console.log('Daemon not responding, starting new instance...');
         }
       }

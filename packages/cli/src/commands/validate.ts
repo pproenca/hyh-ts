@@ -32,7 +32,7 @@ export function registerValidateCommand(program: Command): void {
         console.log(`  Agents: ${Object.keys(workflow.agents || {}).length}`);
       } catch (error) {
         console.error('✗ Validation failed:');
-        console.error(`  ${(error as Error).message}`);
+        console.error(`  ${error instanceof Error ? error.message : String(error)}`);
         process.exit(1);
       }
     });

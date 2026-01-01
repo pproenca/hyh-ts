@@ -16,8 +16,8 @@ export class IPCClient {
     return new Promise((resolve, reject) => {
       this.socket = net.createConnection(this.socketPath);
 
-      this.socket.on('connect', () => resolve());
-      this.socket.on('error', reject);
+      this.socket.on('connect', () => { resolve(); });
+      this.socket.on('error', (err) => { reject(err); });
 
       this.socket.on('data', (data) => {
         this.buffer += data.toString();
@@ -49,6 +49,7 @@ export class IPCClient {
 
     return new Promise((resolve) => {
       this.pendingResolve = resolve;
+      // Socket existence is guaranteed by the null check above
       this.socket!.write(JSON.stringify(req) + '\n');
     });
   }

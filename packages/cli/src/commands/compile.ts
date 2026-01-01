@@ -17,6 +17,7 @@ export function registerCompileCommand(program: Command): void {
       try {
         await fs.access(absolutePath);
       } catch {
+        // Workflow file not found or not accessible
         console.error(`File not found: ${absolutePath}`);
         process.exit(1);
       }

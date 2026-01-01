@@ -10,6 +10,11 @@ interface RunOptions {
   config?: string;
 }
 
+/** Type guard to check if an error is a Node.js system error with a code property. */
+function isNodeError(error: unknown): error is NodeJS.ErrnoException {
+  return error instanceof Error && 'code' in error;
+}
+
 /**
  * Load hyh configuration from hyh.config.ts or specified path.
  * Returns empty config if no file found.
@@ -21,10 +26,12 @@ async function loadConfig(projectDir: string, configPath?: string): Promise<HyhC
 
   try {
     const { default: config } = await import(pathToFileURL(configFile).href);
+    // Config file exports default HyhConfig object
     return config as HyhConfig;
   } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === 'ERR_MODULE_NOT_FOUND') {
-      return {}; // No config file, use defaults
+    if (isNodeError(error) && error.code === 'ERR_MODULE_NOT_FOUND') {
+      // No config file found, use defaults
+      return {};
     }
     throw error;
   }
@@ -126,7 +133,7 @@ export function registerRunCommand(program: Command): void {
           console.log(`Imported ${parsed.length} tasks from plan.md`);
         } catch (error) {
           // Only silently ignore ENOENT (file not found)
-          if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
+          if (!isNodeError(error) || error.code !== 'ENOENT') {
             console.warn(`Warning: Failed to import plan.md: ${error instanceof Error ? error.message : String(error)}`);
           }
         }

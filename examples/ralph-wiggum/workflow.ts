@@ -45,7 +45,6 @@ import {
   agent,
   queue,
   gate,
-  correct,
   compile,
 } from '@hyh/dsl';
 
@@ -57,14 +56,12 @@ const interviewer = agent('interviewer')
   .role('requirements-analyst')
   .tools('Read', 'Grep', 'Glob', 'AskUserQuestion')
   .rules(rule => [
-    rule.noCode(),
+    rule.noCode()
+      .blocks('Interviewers cannot write code'),
     rule.mustProgress('15m')
-  ])
-  .onViolation('noCode', correct.block('Interviewers cannot write code'))
-  .onViolation('mustProgress',
-    correct.prompt('Continue the interview or summarize findings.')
-      .then(correct.escalate('human'))
-  );
+      .prompts('Continue the interview or summarize findings.')
+      .otherwise.escalates('human')
+  ]);
 
 // Refinement: Reviews spec section-by-section
 const refiner = agent('refiner')
@@ -72,10 +69,10 @@ const refiner = agent('refiner')
   .role('spec-reviewer')
   .tools('Read', 'Write', 'AskUserQuestion')
   .rules(rule => [
-    rule.fileScope(() => ['docs/SPEC.md']),
+    rule.fileScope(() => ['docs/SPEC.md'])
+      .blocks('Can only modify SPEC.md'),
     rule.mustProgress('15m')
-  ])
-  .onViolation('fileScope', correct.block('Can only modify SPEC.md'));
+  ]);
 
 // Implementation: TDD-based development
 const implementer = agent('implementer')
@@ -88,12 +85,10 @@ const implementer = agent('implementer')
       impl: 'src/**/*.ts',
       order: ['test', 'impl'],
     })
-  ])
-  .onViolation('tdd',
-    correct.prompt('Write failing test before implementation.')
-      .then(correct.restart())
-      .then(correct.escalate('human'))
-  );
+      .prompts('Write failing test before implementation.')
+      .otherwise.restarts()
+      .otherwise.escalates('human')
+  ]);
 
 // === QUEUES ===
 
@@ -111,9 +106,11 @@ const implementationTasks = queue('implementation-tasks')
 // Quality gate before implementation completes
 const qualityGate = gate('quality')
   .requires(ctx => ctx.exec('pnpm test'))
+    .retries({ max: 3 })
+    .otherwise.escalates('human')
   .requires(ctx => ctx.exec('pnpm lint'))
-  .onFail(correct.retry({ max: 3 }))
-  .onFailFinal(correct.escalate('human'));
+    .retries({ max: 2 })
+    .otherwise.blocks('Lint must pass');
 
 // === WORKFLOW ===
 

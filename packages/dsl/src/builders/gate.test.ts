@@ -1,8 +1,7 @@
 // packages/dsl/src/builders/gate.test.ts
 import { describe, it, expect } from 'vitest';
-import { gate, GateBuilder } from './gate.js';
-import { correct } from '../corrections/index.js';
-import { Context } from '../types/context.js';
+import { gate, GateBuilder, CheckBuilder } from './gate.js';
+import type { Context } from '../types/context.js';
 
 describe('GateBuilder', () => {
   describe('gate()', () => {
@@ -13,20 +12,51 @@ describe('GateBuilder', () => {
     });
   });
 
-  describe('requires()', () => {
-    it('adds a check function as string representation', () => {
+  describe('requires() with per-check corrections', () => {
+    it('adds a check with predicate string', () => {
       const g = gate('tests-pass').requires((ctx: Context) => ctx.phase === 'test');
       const built = g.build();
-      expect(built.requires).toHaveLength(1);
-      expect(built.requires[0]).toContain('ctx.phase');
+      expect(built.checks).toHaveLength(1);
+      expect(built.checks[0]?.predicate).toContain('ctx.phase');
     });
 
-    it('supports multiple requires calls', () => {
+    it('returns CheckBuilder for fluent correction chaining', () => {
+      const checkBuilder = gate('tests-pass').requires((ctx: Context) => ctx.phase === 'test');
+      expect(checkBuilder).toBeInstanceOf(CheckBuilder);
+    });
+
+    it('supports correction verbs on check', () => {
+      const g = gate('tests-pass')
+        .requires((ctx: Context) => ctx.phase === 'test')
+        .retries({ max: 3 })
+        .otherwise.escalates('human');
+      const built = g.build();
+
+      expect(built.checks[0]?.correction?.type).toBe('retry');
+      expect(built.checks[0]?.correction?.max).toBe(3);
+      expect(built.checks[0]?.correction?.then?.type).toBe('escalate');
+    });
+
+    it('supports multiple checks with different corrections', () => {
       const g = gate('all-checks')
         .requires((ctx: Context) => ctx.phase === 'test')
-        .requires((ctx: Context) => ctx.task !== null);
+        .retries({ max: 3 })
+        .otherwise.escalates('human')
+        .requires((ctx: Context) => ctx.task !== null)
+        .retries({ max: 1 })
+        .otherwise.blocks('Task required');
+
       const built = g.build();
-      expect(built.requires).toHaveLength(2);
+      expect(built.checks).toHaveLength(2);
+
+      // First check
+      expect(built.checks[0]?.correction?.type).toBe('retry');
+      expect(built.checks[0]?.correction?.max).toBe(3);
+
+      // Second check
+      expect(built.checks[1]?.correction?.type).toBe('retry');
+      expect(built.checks[1]?.correction?.max).toBe(1);
+      expect(built.checks[1]?.correction?.then?.type).toBe('block');
     });
 
     it('supports async check functions', () => {
@@ -34,83 +64,53 @@ describe('GateBuilder', () => {
         return ctx.phase === 'verify';
       });
       const built = g.build();
-      expect(built.requires[0]).toContain('async');
-    });
-  });
-
-  describe('onFail()', () => {
-    it('sets correction to apply on gate failure', () => {
-      const g = gate('code-review').onFail(correct.prompt('Review needed.'));
-      const built = g.build();
-      expect(built.onFail).toBeDefined();
-      expect(built.onFail?.type).toBe('prompt');
-      expect(built.onFail?.message).toBe('Review needed.');
-    });
-
-    it('supports different correction types', () => {
-      const g = gate('escalate-gate').onFail(correct.escalate('human'));
-      const built = g.build();
-      expect(built.onFail?.type).toBe('escalate');
-      expect(built.onFail?.to).toBe('human');
-    });
-  });
-
-  describe('onFailFinal()', () => {
-    it('sets final correction after all retries exhausted', () => {
-      const g = gate('must-pass').onFailFinal(correct.block('Gate blocked.'));
-      const built = g.build();
-      expect(built.onFailFinal).toBeDefined();
-      expect(built.onFailFinal?.type).toBe('block');
-    });
-
-    it('can be combined with onFail', () => {
-      const g = gate('gradual-escalation')
-        .onFail(correct.prompt('Try again.'))
-        .onFailFinal(correct.escalate('orchestrator'));
-      const built = g.build();
-      expect(built.onFail?.type).toBe('prompt');
-      expect(built.onFailFinal?.type).toBe('escalate');
+      expect(built.checks[0]?.predicate).toContain('async');
     });
   });
 
   describe('build()', () => {
-    it('returns CompiledGate with only defined fields', () => {
+    it('returns CompiledGate with empty checks array', () => {
       const g = gate('simple');
       const built = g.build();
       expect(built).toEqual({
         name: 'simple',
-        requires: [],
+        checks: [],
       });
-      expect(built.onFail).toBeUndefined();
-      expect(built.onFailFinal).toBeUndefined();
     });
 
-    it('returns complete CompiledGate when all options set', () => {
+    it('returns complete CompiledGate with checks and corrections', () => {
       const g = gate('full-gate')
         .requires((ctx: Context) => ctx.phase === 'done')
-        .onFail(correct.retry({ max: 3 }))
-        .onFailFinal(correct.block());
+        .retries({ max: 3 })
+        .otherwise.blocks();
+
       const built = g.build();
       expect(built.name).toBe('full-gate');
-      expect(built.requires).toHaveLength(1);
-      expect(built.onFail?.type).toBe('retry');
-      expect(built.onFailFinal?.type).toBe('block');
+      expect(built.checks).toHaveLength(1);
+      expect(built.checks[0]?.correction?.type).toBe('retry');
     });
   });
 
   describe('fluent chaining', () => {
-    it('supports full fluent API chain', () => {
+    it('supports full fluent API chain with per-check corrections', () => {
       const g = gate('fluent-gate')
         .requires((ctx: Context) => Boolean(ctx.task))
+        .prompts('Task required')
         .requires((ctx: Context) => ctx.phase === 'verify')
-        .onFail(correct.prompt('Check failed'))
-        .onFailFinal(correct.escalate('human'));
+        .retries({ max: 2 })
+        .otherwise.escalates('human');
 
       const built = g.build();
       expect(built.name).toBe('fluent-gate');
-      expect(built.requires).toHaveLength(2);
-      expect(built.onFail?.message).toBe('Check failed');
-      expect(built.onFailFinal?.to).toBe('human');
+      expect(built.checks).toHaveLength(2);
+
+      // First check: prompt correction
+      expect(built.checks[0]?.correction?.type).toBe('prompt');
+      expect(built.checks[0]?.correction?.message).toBe('Task required');
+
+      // Second check: retry then escalate
+      expect(built.checks[1]?.correction?.type).toBe('retry');
+      expect(built.checks[1]?.correction?.then?.to).toBe('human');
     });
   });
 });

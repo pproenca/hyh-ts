@@ -65,14 +65,19 @@ export interface TddOptions {
   commit?: ('test' | 'impl')[];
 }
 
+// Forward declaration for CorrectableRule (actual import would cause circular dependency)
+// The actual type is in invariants/correctable.ts
+import type { CorrectableRule } from '../invariants/correctable.js';
+
 // RuleBuilder context for agent.rules() callback
+// Each rule method returns a CorrectableRule that can chain correction verbs
 export interface RuleBuilder {
-  tdd(options: TddOptions): CompiledRule;
-  fileScope(getter: (ctx: Context) => string[]): CompiledRule;
-  noCode(): CompiledRule;
-  readOnly(): CompiledRule;
-  mustReport(format: string): CompiledRule;
-  mustProgress(timeout: Duration): CompiledRule;
-  externalTodo(options: { file: string; checkBeforeStop: boolean }): CompiledRule;
-  contextLimit(options: { max: number; warn?: number }): CompiledRule;
+  tdd(options: TddOptions): CorrectableRule;
+  fileScope(getter: (ctx: Context) => string[]): CorrectableRule;
+  noCode(): CorrectableRule;
+  readOnly(): CorrectableRule;
+  mustReport(format: string): CorrectableRule;
+  mustProgress(timeout: Duration): CorrectableRule;
+  externalTodo(options: { file: string; checkBeforeStop: boolean }): CorrectableRule;
+  contextLimit(options: { max: number; warn?: number }): CorrectableRule;
 }

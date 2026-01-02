@@ -46,6 +46,7 @@ export interface CompiledRule {
   type: string;
   agentName?: string;
   options?: Record<string, unknown>;
+  correction?: Correction;
 }
 
 // Compiled agent
@@ -56,7 +57,6 @@ export interface CompiledAgent {
   tools: ToolSpec[];
   spawns: string[];
   rules: CompiledRule[];
-  violations: Record<string, Correction[]>;
   heartbeat?: {
     interval: number;
     corrections: Array<{ count: number; correction: Correction }>;
@@ -119,12 +119,16 @@ export interface CompiledQueue {
   examples?: Array<ExampleTask | TaskDefinition>;
 }
 
+// Compiled gate check with per-check correction
+export interface CompiledCheck {
+  predicate: string;
+  correction?: Correction;
+}
+
 // Compiled gate
 export interface CompiledGate {
   name: string;
-  requires: string[];
-  onFail?: Correction;
-  onFailFinal?: Correction;
+  checks: CompiledCheck[];
 }
 
 // Scaling configuration for workflow complexity

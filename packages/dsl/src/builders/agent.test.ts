@@ -108,24 +108,25 @@ describe('AgentBuilder.heartbeat', () => {
     expect(ag.heartbeat?.interval).toBe(30000);
   });
 
-  it('configures heartbeat with onMiss correction', () => {
+  it('configures heartbeat with misses(n).verb() pattern', () => {
     const ag = agent('worker')
       .model('sonnet')
       .heartbeat('30s')
-      .onMiss({ type: 'prompt', message: 'Are you still working?' })
+      .misses(1).prompts('Are you still working?')
       .build();
 
     expect(ag.heartbeat?.corrections).toHaveLength(1);
+    expect(ag.heartbeat?.corrections[0]?.count).toBe(1);
     expect(ag.heartbeat?.corrections[0]?.correction.type).toBe('prompt');
   });
 
-  it('chains multiple onMiss corrections with counts', () => {
+  it('chains multiple misses with different counts', () => {
     const ag = agent('worker')
       .model('sonnet')
       .heartbeat('30s')
-      .onMiss({ type: 'prompt', message: 'Check in please' })
-      .onMiss(2, { type: 'warn', message: 'Second warning' })
-      .onMiss(3, { type: 'restart' })
+      .misses(1).prompts('Check in please')
+      .misses(2).warns('Second warning')
+      .misses(3).restarts()
       .build();
 
     expect(ag.heartbeat?.corrections).toHaveLength(3);
@@ -135,8 +136,7 @@ describe('AgentBuilder.heartbeat', () => {
   });
 });
 
-
-describe('AgentBuilder.rules', () => {
+describe('AgentBuilder.rules with integrated corrections', () => {
   it('accepts callback with rule builder', () => {
     const ag = agent('worker')
       .model('sonnet')
@@ -149,6 +149,28 @@ describe('AgentBuilder.rules', () => {
     expect(ag.rules).toHaveLength(2);
     expect(ag.rules[0]?.type).toBe('noCode');
     expect(ag.rules[1]?.type).toBe('mustProgress');
+  });
+
+  it('supports rule with correction verbs', () => {
+    const ag = agent('worker')
+      .model('sonnet')
+      .rules(rule => [
+        rule.noCode()
+          .blocks('No code allowed'),
+        rule.mustProgress('15m')
+          .prompts('Keep working')
+          .otherwise.escalates('human')
+      ])
+      .build();
+
+    expect(ag.rules[0]?.type).toBe('noCode');
+    expect(ag.rules[0]?.correction?.type).toBe('block');
+    expect(ag.rules[0]?.correction?.message).toBe('No code allowed');
+
+    expect(ag.rules[1]?.type).toBe('mustProgress');
+    expect(ag.rules[1]?.correction?.type).toBe('prompt');
+    expect(ag.rules[1]?.correction?.then?.type).toBe('escalate');
+    expect(ag.rules[1]?.correction?.then?.to).toBe('human');
   });
 
   it('supports all rule types', () => {
@@ -179,58 +201,32 @@ describe('AgentBuilder.rules', () => {
     ]);
   });
 
-  it('chains with onViolation', () => {
-    const ag = agent('worker')
-      .model('sonnet')
-      .rules(rule => [rule.noCode()])
-      .onViolation('noCode', { type: 'block', message: 'No code allowed' })
-      .build();
-
-    expect(ag.rules[0]?.type).toBe('noCode');
-    expect(ag.violations['noCode']).toBeDefined();
-  });
-
   it('chains from heartbeat builder', () => {
     const ag = agent('worker')
       .model('sonnet')
       .heartbeat('30s')
-      .onMiss({ type: 'prompt', message: 'Check in' })
+      .misses(1).prompts('Check in')
       .rules(rule => [rule.mustProgress('15m')])
       .build();
 
     expect(ag.heartbeat).toBeDefined();
     expect(ag.rules[0]?.type).toBe('mustProgress');
   });
-});
 
-describe('AgentBuilder.onViolation', () => {
-  it('binds correction to violation type', () => {
+  it('supports tdd rule with correction chain', () => {
     const ag = agent('worker')
       .model('sonnet')
-      .onViolation('tdd', { type: 'prompt', message: 'Write tests first!' })
+      .rules(rule => [
+        rule.tdd({ test: '**/*.test.ts', impl: 'src/**/*.ts' })
+          .prompts('Write tests first')
+          .otherwise.restarts()
+          .otherwise.escalates('human')
+      ])
       .build();
 
-    expect(ag.violations['tdd']).toBeDefined();
-    expect(ag.violations['tdd']![0]?.type).toBe('prompt');
-  });
-
-  it('supports multiple corrections per violation type', () => {
-    const ag = agent('worker')
-      .model('sonnet')
-      .onViolation('fileScope', { type: 'prompt', message: 'Stay in scope' })
-      .onViolation('fileScope', { type: 'block', message: 'Blocked' })
-      .build();
-
-    expect(ag.violations['fileScope']).toHaveLength(2);
-  });
-
-  it('supports onViolation with after count option', () => {
-    const ag = agent('worker')
-      .model('sonnet')
-      .onViolation('tdd', { after: 2 }, { type: 'restart' })
-      .build();
-
-    expect(ag.violations['tdd']).toBeDefined();
-    expect(ag.violations['tdd']![0]?.type).toBe('restart');
+    expect(ag.rules[0]?.type).toBe('tdd');
+    expect(ag.rules[0]?.correction?.type).toBe('prompt');
+    expect(ag.rules[0]?.correction?.then?.type).toBe('restart');
+    expect(ag.rules[0]?.correction?.then?.then?.type).toBe('escalate');
   });
 });

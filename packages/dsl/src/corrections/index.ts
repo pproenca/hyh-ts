@@ -1,94 +1,124 @@
 // packages/dsl/src/corrections/index.ts
-import { Correction } from '../types/compiled.js';
+import type { Correction } from '../types/compiled.js';
 
 // Store the underlying correction for each chainable (for debugging and serialization)
 const underlyingCorrections = new WeakMap<object, Correction>();
 
-// Chainable correction type - then is both callable and has Correction properties
-interface ChainableThen {
-  (next: Correction): ChainableCorrection;
-  type?: Correction['type'];
-  message?: string;
-  to?: 'orchestrator' | 'human';
-  max?: number;
-  backoff?: number;
-  preserveTypes?: string[];
-  then?: ChainableThen;
+/**
+ * Chainable correction with .otherwise namespace for fallback chaining.
+ * Replaces the old .then() pattern with more semantic naming.
+ */
+interface ChainableCorrection extends Correction {
+  readonly otherwise: OtherwiseNamespace;
 }
 
-type ChainableCorrection = Correction & {
-  then: ChainableThen;
-};
+/**
+ * The .otherwise namespace provides all correction factory methods for fallback chaining.
+ */
+interface OtherwiseNamespace {
+  prompts(message: string): ChainableCorrection;
+  warns(message: string): ChainableCorrection;
+  blocks(message?: string): ChainableCorrection;
+  restarts(): ChainableCorrection;
+  reassigns(): ChainableCorrection;
+  retries(options: { max: number; backoff?: number }): ChainableCorrection;
+  escalates(to: 'orchestrator' | 'human'): ChainableCorrection;
+  compacts(options: { preserve: string[]; discard?: string[] }): ChainableCorrection;
+}
 
 // Debug helper to get the underlying correction
-export function _getUnderlyingCorrection(chainable: ChainableCorrection): Correction {
+export function getUnderlyingCorrection(chainable: ChainableCorrection): Correction {
   return underlyingCorrections.get(chainable) ?? { type: 'prompt' };
 }
 
-// Convert a Correction into chainable form using Proxy for lazy access
-function makeChainable(correction: Correction): ChainableCorrection {
-  // Create the base chainable method as arrow function per style guide
-  const chainMethod = (next: Correction): ChainableCorrection => {
-    // If next is a ChainableCorrection, get its underlying Correction
-    const nextCorrection = underlyingCorrections.get(next as object) ?? next;
-
-    // Find the end of the chain and append
-    if (!correction.then) {
-      correction.then = nextCorrection;
-    } else {
-      let current: Correction = correction.then;
-      while (current.then) {
-        current = current.then;
-      }
-      current.then = nextCorrection;
+/** Appends a correction to the end of the chain */
+function appendToChain(base: Correction, next: Correction): Correction {
+  if (!base.then) {
+    base.then = next;
+  } else {
+    let current = base.then;
+    while (current.then) {
+      current = current.then;
     }
-    return makeChainable(correction);
+    current.then = next;
+  }
+  return base;
+}
+
+/** Creates the .otherwise namespace for a correction */
+function createOtherwiseNamespace(base: Correction): OtherwiseNamespace {
+  return {
+    prompts(message: string): ChainableCorrection {
+      appendToChain(base, { type: 'prompt', message });
+      return makeChainable(base);
+    },
+    warns(message: string): ChainableCorrection {
+      appendToChain(base, { type: 'warn', message });
+      return makeChainable(base);
+    },
+    blocks(message?: string): ChainableCorrection {
+      const correction: Correction = { type: 'block' };
+      if (message) {
+        correction.message = message;
+      }
+      appendToChain(base, correction);
+      return makeChainable(base);
+    },
+    restarts(): ChainableCorrection {
+      appendToChain(base, { type: 'restart' });
+      return makeChainable(base);
+    },
+    reassigns(): ChainableCorrection {
+      appendToChain(base, { type: 'reassign' });
+      return makeChainable(base);
+    },
+    retries(options: { max: number; backoff?: number }): ChainableCorrection {
+      const correction: Correction = { type: 'retry', max: options.max };
+      if (options.backoff !== undefined) {
+        correction.backoff = options.backoff;
+      }
+      appendToChain(base, correction);
+      return makeChainable(base);
+    },
+    escalates(to: 'orchestrator' | 'human'): ChainableCorrection {
+      appendToChain(base, { type: 'escalate', to });
+      return makeChainable(base);
+    },
+    compacts(options: { preserve: string[]; discard?: string[] }): ChainableCorrection {
+      appendToChain(base, { type: 'compact', preserveTypes: options.preserve });
+      return makeChainable(base);
+    },
+  };
+}
+
+/** Convert a Correction into chainable form with .otherwise namespace */
+function makeChainable(correction: Correction): ChainableCorrection {
+  // Build the result object with correction properties
+  const result: ChainableCorrection = {
+    type: correction.type,
+    get otherwise(): OtherwiseNamespace {
+      return createOtherwiseNamespace(correction);
+    },
   };
 
-  // Create a proxy that acts as both a function (chainable) and object (correction data)
-  const thenProxy = new Proxy(chainMethod, {
-    get(target, prop) {
-      // Handle function properties
-      if (prop === 'call' || prop === 'apply' || prop === 'bind') {
-        // Safe: accessing standard Function properties through proxy
-        return (target as unknown as Record<string | symbol, unknown>)[prop];
-      }
-      // Handle correction.then data access
-      if (correction.then) {
-        if (prop === 'then') {
-          return makeChainable(correction.then).then;
-        }
-        // Safe: dynamic property access on Correction object for proxy delegation
-        return (correction.then as unknown as Record<string | symbol, unknown>)[prop];
-      }
-      return undefined;
-    },
-    apply(target, thisArg, args) {
-      return target.apply(thisArg, args as [Correction]);
-    },
-  // Safe: Proxy returns ChainableThen interface for callable + property access
-  }) as ChainableThen;
-
-  // Build the result object conditionally to avoid undefined values
-  // Safe: result object carefully constructed to match ChainableCorrection interface
-  const result = {
-    type: correction.type,
-    then: thenProxy,
-  } as ChainableCorrection;
+  // Copy optional fields
   if (correction.message) {
-    result.message = correction.message;
+    (result as Correction).message = correction.message;
   }
   if (correction.to) {
-    result.to = correction.to;
+    (result as Correction).to = correction.to;
   }
   if (correction.max !== undefined) {
-    result.max = correction.max;
+    (result as Correction).max = correction.max;
   }
   if (correction.backoff !== undefined) {
-    result.backoff = correction.backoff;
+    (result as Correction).backoff = correction.backoff;
   }
   if (correction.preserveTypes) {
-    result.preserveTypes = correction.preserveTypes;
+    (result as Correction).preserveTypes = correction.preserveTypes;
+  }
+  if (correction.then) {
+    (result as Correction).then = correction.then;
   }
 
   // Store the underlying correction
@@ -97,22 +127,30 @@ function makeChainable(correction: Correction): ChainableCorrection {
   return result;
 }
 
+/**
+ * Factory for creating chainable corrections.
+ * Use .otherwise for fallback chaining.
+ * @example
+ * correct.prompts('Try again')
+ *   .otherwise.restarts()
+ *   .otherwise.escalates('human')
+ */
 export const correct = {
-  prompt(message: string): ChainableCorrection {
+  prompts(message: string): ChainableCorrection {
     return makeChainable({
       type: 'prompt',
       message,
     });
   },
 
-  warn(message: string): ChainableCorrection {
+  warns(message: string): ChainableCorrection {
     return makeChainable({
       type: 'warn',
       message,
     });
   },
 
-  block(message?: string): ChainableCorrection {
+  blocks(message?: string): ChainableCorrection {
     const correction: Correction = { type: 'block' };
     if (message) {
       correction.message = message;
@@ -120,19 +158,19 @@ export const correct = {
     return makeChainable(correction);
   },
 
-  restart(): ChainableCorrection {
+  restarts(): ChainableCorrection {
     return makeChainable({
       type: 'restart',
     });
   },
 
-  reassign(): ChainableCorrection {
+  reassigns(): ChainableCorrection {
     return makeChainable({
       type: 'reassign',
     });
   },
 
-  retry(options: { max: number; backoff?: number }): ChainableCorrection {
+  retries(options: { max: number; backoff?: number }): ChainableCorrection {
     const correction: Correction = {
       type: 'retry',
       max: options.max,
@@ -143,14 +181,14 @@ export const correct = {
     return makeChainable(correction);
   },
 
-  escalate(to: 'orchestrator' | 'human'): ChainableCorrection {
+  escalates(to: 'orchestrator' | 'human'): ChainableCorrection {
     return makeChainable({
       type: 'escalate',
       to,
     });
   },
 
-  compact(options: { preserve: string[]; discard?: string[] }): ChainableCorrection {
+  compacts(options: { preserve: string[]; discard?: string[] }): ChainableCorrection {
     return makeChainable({
       type: 'compact',
       preserveTypes: options.preserve,

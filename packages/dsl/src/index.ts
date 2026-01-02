@@ -11,6 +11,15 @@ export { human } from './checkpoints/human.js';
 export { compile, compileToDir } from './compiler/index.js';
 export type { CompileOptions } from './compiler/index.js';
 
+// Correctable rule for fluent rule+correction chaining
+export { CorrectableRule } from './invariants/index.js';
+
+// Correction verb types for custom builders
+export type {
+  CorrectionVerbs,
+  ChainableCorrectionVerbs,
+} from './corrections/verbs.js';
+
 // Types
 export type {
   CompiledWorkflow,
@@ -18,6 +27,7 @@ export type {
   CompiledPhase,
   CompiledQueue,
   CompiledGate,
+  CompiledCheck,
   CompiledRule,
   Correction,
   Checkpoint,

@@ -1,5 +1,5 @@
 // packages/dsl/src/invariants/tdd.ts
-import { CompiledInvariant } from '../types/compiled.js';
+import { CompiledRule } from '../types/compiled.js';
 import { GlobPattern } from '../types/primitives.js';
 
 export interface TddOptions {
@@ -9,7 +9,7 @@ export interface TddOptions {
   commit?: ('test' | 'impl')[];
 }
 
-export function tdd(options: TddOptions): CompiledInvariant {
+export function tdd(options: TddOptions): CompiledRule {
   return {
     type: 'tdd',
     options: {

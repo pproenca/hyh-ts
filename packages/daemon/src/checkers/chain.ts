@@ -32,9 +32,9 @@ export class CheckerChain {
   static fromWorkflow(workflow: CompiledWorkflow): CheckerChain {
     const checkers: Checker[] = [];
 
-    // Process each agent's invariants
+    // Process each agent's rules
     for (const [agentName, agent] of Object.entries(workflow.agents)) {
-      for (const invariant of agent.invariants) {
+      for (const invariant of agent.rules) {
         const opts = invariant.options ?? {};
 
         switch (invariant.type) {

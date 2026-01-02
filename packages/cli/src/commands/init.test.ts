@@ -49,11 +49,12 @@ describe('init command workflow template', () => {
     expect(template).toContain(".checkpoint(");
   });
 
-  it('includes invariants', async () => {
+  it('includes rules', async () => {
     const { createWorkflowTemplate } = await import('./init.js');
     const template = createWorkflowTemplate();
 
-    expect(template).toContain("inv.tdd(");
+    expect(template).toContain(".rules(rule => [");
+    expect(template).toContain("rule.tdd(");
     expect(template).toContain("'**/*.test.ts'");
   });
 });

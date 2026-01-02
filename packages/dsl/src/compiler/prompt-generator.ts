@@ -33,10 +33,10 @@ export function generateAgentPrompt(agent: CompiledAgent): string {
   lines.push('```');
   lines.push('');
 
-  if (agent.invariants.length > 0) {
+  if (agent.rules.length > 0) {
     lines.push('## Constraints');
     lines.push('');
-    for (const inv of agent.invariants) {
+    for (const inv of agent.rules) {
       lines.push(`### ${inv.type}`);
       lines.push(getInvariantDescription(inv.type, inv.options));
       lines.push('');

@@ -1,7 +1,7 @@
 // packages/dsl/src/compiler/prompt-generator.test.ts
 import { describe, it, expect } from 'vitest';
 import { generateAgentPrompt } from './prompt-generator.js';
-import { agent, inv } from '../index.js';
+import { agent } from '../index.js';
 
 describe('generateAgentPrompt', () => {
   it('generates markdown prompt for agent', () => {
@@ -9,10 +9,10 @@ describe('generateAgentPrompt', () => {
       .model('sonnet')
       .role('implementation')
       .tools('Read', 'Write', 'Edit', 'Bash(npm:*)')
-      .invariants(
-        inv.tdd({ test: '**/*.test.ts', impl: 'src/**/*.ts' }),
-        inv.fileScope(ctx => ctx.task.files)
-      )
+      .rules(rule => [
+        rule.tdd({ test: '**/*.test.ts', impl: 'src/**/*.ts' }),
+        rule.fileScope(ctx => ctx.task.files)
+      ])
       .build();
 
     const prompt = generateAgentPrompt(worker);

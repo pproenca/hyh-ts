@@ -41,8 +41,8 @@ export interface Choice {
   options: string[];
 }
 
-// Compiled invariant
-export interface CompiledInvariant {
+// Compiled rule (constraint/invariant)
+export interface CompiledRule {
   type: string;
   agentName?: string;
   options?: Record<string, unknown>;
@@ -55,7 +55,7 @@ export interface CompiledAgent {
   role: string;
   tools: ToolSpec[];
   spawns: string[];
-  invariants: CompiledInvariant[];
+  rules: CompiledRule[];
   violations: Record<string, Correction[]>;
   heartbeat?: {
     interval: number;

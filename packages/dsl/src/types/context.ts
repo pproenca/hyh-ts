@@ -1,6 +1,7 @@
 // packages/dsl/src/types/context.ts
-import { TaskStatus } from './primitives.js';
-import { Checkpoint } from './compiled.js';
+import { TaskStatus, Duration, GlobPattern } from './primitives.js';
+import { Checkpoint, CompiledRule } from './compiled.js';
+import { human } from '../checkpoints/human.js';
 
 // Task type for runtime context
 export interface Task {
@@ -49,4 +50,29 @@ export interface Context {
   git: GitOps;
   uniqueId(): string;
   lastCheckpoint: Checkpoint | null;
+}
+
+// Actor context for checkpoint callbacks (evaluated at compile time)
+export interface Actor {
+  human: typeof human;
+}
+
+// TDD options for rule.tdd()
+export interface TddOptions {
+  test: GlobPattern;
+  impl: GlobPattern;
+  order?: ('test' | 'impl')[];
+  commit?: ('test' | 'impl')[];
+}
+
+// RuleBuilder context for agent.rules() callback
+export interface RuleBuilder {
+  tdd(options: TddOptions): CompiledRule;
+  fileScope(getter: (ctx: Context) => string[]): CompiledRule;
+  noCode(): CompiledRule;
+  readOnly(): CompiledRule;
+  mustReport(format: string): CompiledRule;
+  mustProgress(timeout: Duration): CompiledRule;
+  externalTodo(options: { file: string; checkBeforeStop: boolean }): CompiledRule;
+  contextLimit(options: { max: number; warn?: number }): CompiledRule;
 }

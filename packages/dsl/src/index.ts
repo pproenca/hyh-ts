@@ -6,7 +6,6 @@ export { agent } from './builders/agent.js';
 export { queue } from './builders/queue.js';
 export { gate } from './builders/gate.js';
 export { task } from './builders/task.js';
-export { inv } from './invariants/index.js';
 export { correct } from './corrections/index.js';
 export { human } from './checkpoints/human.js';
 export { compile, compileToDir } from './compiler/index.js';
@@ -19,7 +18,7 @@ export type {
   CompiledPhase,
   CompiledQueue,
   CompiledGate,
-  CompiledInvariant,
+  CompiledRule,
   Correction,
   Checkpoint,
   ScalingConfig,

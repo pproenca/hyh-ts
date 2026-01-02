@@ -135,19 +135,71 @@ describe('AgentBuilder.heartbeat', () => {
   });
 });
 
-describe('AgentBuilder.invariants', () => {
-  it('adds invariants to agent', () => {
+
+describe('AgentBuilder.rules', () => {
+  it('accepts callback with rule builder', () => {
     const ag = agent('worker')
       .model('sonnet')
-      .invariants(
-        { type: 'tdd', commitAfterTest: true },
-        { type: 'fileScope', allowed: ['src/'] }
-      )
+      .rules(rule => [
+        rule.noCode(),
+        rule.mustProgress('15m')
+      ])
       .build();
 
-    expect(ag.invariants).toHaveLength(2);
-    expect(ag.invariants[0]?.type).toBe('tdd');
-    expect(ag.invariants[1]?.type).toBe('fileScope');
+    expect(ag.rules).toHaveLength(2);
+    expect(ag.rules[0]?.type).toBe('noCode');
+    expect(ag.rules[1]?.type).toBe('mustProgress');
+  });
+
+  it('supports all rule types', () => {
+    const ag = agent('worker')
+      .model('sonnet')
+      .rules(rule => [
+        rule.noCode(),
+        rule.readOnly(),
+        rule.mustProgress('10m'),
+        rule.mustReport('markdown'),
+        rule.tdd({ test: '**/*.test.ts', impl: 'src/**/*.ts' }),
+        rule.fileScope(() => ['src/auth.ts']),
+        rule.contextLimit({ max: 50000 }),
+        rule.externalTodo({ file: 'TODO.md', checkBeforeStop: true })
+      ])
+      .build();
+
+    expect(ag.rules).toHaveLength(8);
+    expect(ag.rules.map(i => i.type)).toEqual([
+      'noCode',
+      'readOnly',
+      'mustProgress',
+      'mustReport',
+      'tdd',
+      'fileScope',
+      'contextLimit',
+      'externalTodo'
+    ]);
+  });
+
+  it('chains with onViolation', () => {
+    const ag = agent('worker')
+      .model('sonnet')
+      .rules(rule => [rule.noCode()])
+      .onViolation('noCode', { type: 'block', message: 'No code allowed' })
+      .build();
+
+    expect(ag.rules[0]?.type).toBe('noCode');
+    expect(ag.violations['noCode']).toBeDefined();
+  });
+
+  it('chains from heartbeat builder', () => {
+    const ag = agent('worker')
+      .model('sonnet')
+      .heartbeat('30s')
+      .onMiss({ type: 'prompt', message: 'Check in' })
+      .rules(rule => [rule.mustProgress('15m')])
+      .build();
+
+    expect(ag.heartbeat).toBeDefined();
+    expect(ag.rules[0]?.type).toBe('mustProgress');
   });
 });
 

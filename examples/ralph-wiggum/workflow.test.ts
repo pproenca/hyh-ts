@@ -45,7 +45,7 @@ describe('Ralph Wiggum Workflow', () => {
   it('implementation phase has TDD invariant', () => {
     const compiled = compile(ralphWiggumWorkflow);
     const implementer = compiled.agents['implementer'];
-    const tddInv = implementer?.invariants.find(i => i.type === 'tdd');
+    const tddInv = implementer?.rules.find(i => i.type === 'tdd');
     expect(tddInv).toBeDefined();
   });
 

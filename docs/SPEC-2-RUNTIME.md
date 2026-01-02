@@ -1160,12 +1160,12 @@ describe('DSL Compilation', () => {
     expect(wf.phases[0].expects).toContain('Read');
   });
   
-  test('invariants compile to checker functions', () => {
-    const agent = agent('worker')
-      .invariants(inv.tdd({ test: '*.test.ts', impl: 'src/*.ts' }))
+  test('rules compile to checker functions', () => {
+    const a = agent('worker')
+      .rules(rule => [rule.tdd({ test: '*.test.ts', impl: 'src/*.ts' })])
       .build();
-    
-    const checker = agent.invariants[0].checker;
+
+    const checker = a.invariants[0].checker;
     expect(typeof checker).toBe('function');
   });
 });

@@ -4,7 +4,7 @@ import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 
 export function createWorkflowTemplate(): string {
-  return `import { workflow, agent, queue, inv, correct, human } from '@hyh/dsl';
+  return `import { workflow, agent, queue, correct } from '@hyh/dsl';
 
 // Define agents
 const orchestrator = agent('orchestrator')
@@ -16,9 +16,9 @@ const worker = agent('worker')
   .model('sonnet')
   .role('implementation')
   .tools('Read', 'Write', 'Edit', 'Bash(npm:*)', 'Bash(git:*)', 'Bash(hyh:*)')
-  .invariants(
-    inv.tdd({ test: '**/*.test.ts', impl: 'src/**/*.ts' }),
-  );
+  .rules(rule => [
+    rule.tdd({ test: '**/*.test.ts', impl: 'src/**/*.ts' }),
+  ]);
 
 // Define queues
 const tasks = queue('tasks')
@@ -34,7 +34,7 @@ export default workflow('my-feature')
     .agent(orchestrator)
     .output('plan.md', 'tasks.md')
     .populates(tasks)
-    .checkpoint(human.approval())
+    .checkpoint(actor => actor.human.approval())
 
   .phase('implement')
     .queue(tasks)

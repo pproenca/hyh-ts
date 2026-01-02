@@ -165,7 +165,7 @@ describe('PhaseBuilder.checkpoint', () => {
       .orchestrator(orch)
       .phase('review')
         .agent(orch)
-        .checkpoint(human.approval('Ready to proceed?'))
+        .checkpoint(actor => actor.human.approval('Ready to proceed?'))
       .build();
 
     const phase = result.phases.find(p => p.name === 'review');

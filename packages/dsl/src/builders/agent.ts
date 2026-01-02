@@ -1,6 +1,8 @@
 // packages/dsl/src/builders/agent.ts
 import { Model, ToolSpec, parseDuration, Duration } from '../types/primitives.js';
-import { CompiledAgent, CompiledInvariant, Correction } from '../types/compiled.js';
+import { CompiledAgent, CompiledRule, Correction } from '../types/compiled.js';
+import { inv } from '../invariants/index.js';
+import type { RuleBuilder } from '../types/context.js';
 
 interface HeartbeatConfig {
   interval: number;
@@ -27,7 +29,7 @@ export class AgentBuilder {
   private _role: string = 'worker';
   private _tools: ToolSpec[] = [];
   private _spawns: string[] = [];
-  private _invariants: CompiledInvariant[] = [];
+  private _rules: CompiledRule[] = [];
   private _violations: Record<string, Correction[]> = {};
   private _heartbeat?: HeartbeatConfig;
   private _isReadOnly: boolean = false;
@@ -76,10 +78,30 @@ export class AgentBuilder {
     return new HeartbeatBuilder(this, this._heartbeat);
   }
 
-  invariants(...invariants: CompiledInvariant[]): this {
-    this._invariants.push(...invariants);
+  /**
+   * Define agent rules using callback for IDE autocomplete
+   * @example
+   * agent('worker')
+   *   .rules(rule => [
+   *     rule.noCode(),
+   *     rule.mustProgress('15m')
+   *   ])
+   */
+  rules(factory: (rule: RuleBuilder) => CompiledRule[]): this {
+    const ruleImpl: RuleBuilder = {
+      tdd: inv.tdd,
+      fileScope: inv.fileScope,
+      noCode: inv.noCode,
+      readOnly: inv.readOnly,
+      mustReport: inv.mustReport,
+      mustProgress: inv.mustProgress,
+      externalTodo: inv.externalTodo,
+      contextLimit: inv.contextLimit,
+    };
+    this._rules.push(...factory(ruleImpl));
     return this;
   }
+
 
   postToolUse(config: { matcher: string; run: string[] }): this {
     this._postToolUse = { matcher: config.matcher, commands: config.run };
@@ -123,7 +145,7 @@ export class AgentBuilder {
       role: this._role,
       tools: this._tools,
       spawns: this._spawns,
-      invariants: this._invariants,
+      rules: this._rules,
       violations: this._violations,
     };
     if (this._heartbeat) {
@@ -166,8 +188,8 @@ class HeartbeatBuilder {
     return this;
   }
 
-  invariants(...invariants: CompiledInvariant[]): AgentBuilder {
-    return this._parent.invariants(...invariants);
+  rules(factory: (rule: RuleBuilder) => CompiledRule[]): AgentBuilder {
+    return this._parent.rules(factory);
   }
 
   onViolation(type: string, correction: Correction): AgentBuilder {

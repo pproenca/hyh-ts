@@ -3,7 +3,8 @@ import { CompiledPhase, Checkpoint } from '../types/compiled.js';
 import { AgentBuilder } from './agent.js';
 import { QueueBuilder } from './queue.js';
 import { GateBuilder } from './gate.js';
-import type { Context } from '../types/context.js';
+import { human } from '../checkpoints/human.js';
+import type { Context, Actor } from '../types/context.js';
 
 // Forward reference type for WorkflowBuilder
 interface WorkflowBuilderLike {
@@ -91,8 +92,9 @@ export class PhaseBuilder {
     return this;
   }
 
-  checkpoint(checkpoint: Checkpoint): this {
-    this._checkpoint = checkpoint;
+  checkpoint(factory: (actor: Actor) => Checkpoint): this {
+    const actorImpl: Actor = { human };
+    this._checkpoint = factory(actorImpl);
     return this;
   }
 

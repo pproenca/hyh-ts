@@ -214,7 +214,7 @@ The DSL should be **homoiconic**: the workflow definition IS the runtime checker
 ### Complete Example
 
 ```typescript
-import { workflow, queue, gate, agent, inv, correct, human, task } from '@hyh/dsl';
+import { workflow, queue, gate, agent, correct, human, task } from '@hyh/dsl';
 
 // === QUEUES ===
 
@@ -244,12 +244,12 @@ const orchestrator = agent('orchestrator')
   .role('coordinator')
   .tools('Read', 'Grep', 'Bash(hyh:*)')
   .spawns(worker)
-  .invariants(
-    inv.noCode(),
-    inv.mustProgress('10m'),
-  )
+  .rules(rule => [
+    rule.noCode(),
+    rule.mustProgress('10m'),
+  ])
   .onViolation('noCode', correct.block())
-  .onViolation('mustProgress', 
+  .onViolation('mustProgress',
     correct.prompt('No progress detected. Continue or report blockers.')
       .then(correct.escalate('human'))
   );
@@ -261,16 +261,16 @@ const worker = agent('worker')
   .heartbeat('30s')
     .onMiss(correct.warn('Continue working or ask for help.'))
     .onMiss(3, correct.reassign())
-  .invariants(
-    inv.tdd({
+  .rules(rule => [
+    rule.tdd({
       test: '**/*.test.ts',
       impl: 'src/**/*.ts',
       order: ['test', 'impl'],
       commit: ['test', 'impl'],
     }),
-    inv.fileScope(ctx => ctx.task.files),
-  )
-  .onViolation('tdd', 
+    rule.fileScope(ctx => ctx.task.files),
+  ])
+  .onViolation('tdd',
     correct.prompt('Delete implementation. Write failing tests first.')
       .then(correct.restart())
       .then(correct.escalate('orchestrator'))
@@ -282,9 +282,9 @@ const verifier = agent('verifier')
   .role('reviewer')
   .tools('Read', 'Bash(npm:*)')
   .readOnly()
-  .invariants(
-    inv.mustReport('verification-result'),
-  );
+  .rules(rule => [
+    rule.mustReport('verification-result'),
+  ]);
 
 // === WORKFLOW ===
 
@@ -303,8 +303,8 @@ export default workflow('feature')
     .requires('architecture.md')
     .output('plan.md', 'tasks.md')
     .populates(tasks)
-    .checkpoint(human.approval())
-  
+    .checkpoint(actor => actor.human.approval())
+
   .phase('implement')
     .queue(tasks)
     .agent(worker)
@@ -319,7 +319,7 @@ export default workflow('feature')
   
   .phase('complete')
     .agent(orchestrator)
-    .checkpoint(human.approval('Ready to merge?'))
+    .checkpoint(actor => actor.human.approval('Ready to merge?'))
     .onApprove(ctx => ctx.git.merge())
   
   .build();
@@ -406,10 +406,10 @@ interface AgentBuilder {
   
   // Liveness
   heartbeat(interval: Duration): HeartbeatBuilder;
-  
-  // Constraints
-  invariants(...invariants: Invariant[]): this;
-  
+
+  // Rules (constraints)
+  rules(factory: (rule: RuleBuilder) => Invariant[]): this;
+
   // Corrections
   onViolation(type: string, correction: Correction): this;
   onViolation(type: string, options: { after: number }, correction: Correction): this;
@@ -436,7 +436,9 @@ const worker = agent('worker')
   .heartbeat('30s')
     .onMiss(correct.warn('Still working?'))
     .onMiss(3, correct.reassign())
-  .invariants(inv.tdd({ test: '**/*.test.ts', impl: 'src/**/*.ts' }))
+  .rules(rule => [
+    rule.tdd({ test: '**/*.test.ts', impl: 'src/**/*.ts' })
+  ])
   .onViolation('tdd', correct.prompt('Write tests first.'));
 ```
 
@@ -472,8 +474,8 @@ interface PhaseBuilder {
   
   // Flow
   then(queue: QueueBuilder): this;
-  checkpoint(checkpoint: Checkpoint): this;
-  
+  checkpoint(factory: (actor: Actor) => Checkpoint): this;
+
   // Completion action
   onApprove(action: (ctx: Context) => void): this;
 }
@@ -574,44 +576,64 @@ interface ApprovalOptions {
   timeout?: Duration;
   onTimeout?: 'abort' | 'continue' | 'escalate';
 }
+
+interface Actor {
+  human: HumanBuilder;
+}
 ```
 
 **Example**:
 ```typescript
-.checkpoint(human.approval('Ready to merge?'))
+.checkpoint(actor => actor.human.approval('Ready to merge?'))
 ```
 
 ---
 
 ## 7. Invariant System
 
-### 7.1 Built-in Invariants
+### 7.1 Built-in Rules
+
+Rules are accessed via the `rules()` callback on AgentBuilder:
 
 ```typescript
-const inv = {
+agent('worker')
+  .rules(rule => [
+    rule.tdd({ test: '**/*.test.ts', impl: 'src/**/*.ts' }),
+    rule.fileScope(ctx => ctx.task.files),
+    rule.noCode(),
+    rule.readOnly(),
+    rule.mustReport('markdown'),
+    rule.mustProgress('15m'),
+  ]);
+```
+
+The `RuleBuilder` interface provides:
+
+```typescript
+interface RuleBuilder {
   // TDD enforcement
   tdd(options: TddOptions): Invariant;
-  
+
   // File scope restriction
   fileScope(getter: (ctx: Context) => string[]): Invariant;
-  
+
   // No code modifications (for orchestrator)
   noCode(): Invariant;
-  
+
   // Read-only agent
   readOnly(): Invariant;
-  
+
   // Must produce output
   mustReport(format: string): Invariant;
-  
+
   // Progress requirement
   mustProgress(timeout: Duration): Invariant;
-};
+}
 
 interface TddOptions {
   test: GlobPattern;      // e.g., '**/*.test.ts'
   impl: GlobPattern;      // e.g., 'src/**/*.ts'
-  order: ('test' | 'impl')[];  // Required sequence
+  order?: ('test' | 'impl')[];  // Required sequence
   commit?: ('test' | 'impl')[]; // Commit points
 }
 ```
@@ -620,7 +642,7 @@ interface TddOptions {
 
 Each invariant compiles to a checker function:
 
-**`inv.tdd()`**:
+**`rule.tdd()`**:
 ```typescript
 function checkTdd(trajectory: Event[], options: TddOptions): Violation | null {
   const writes = trajectory.filter(e => e.tool === 'Write');
@@ -641,7 +663,7 @@ function checkTdd(trajectory: Event[], options: TddOptions): Violation | null {
 }
 ```
 
-**`inv.fileScope()`**:
+**`rule.fileScope()`**:
 ```typescript
 function checkFileScope(event: Event, allowed: string[]): Violation | null {
   if (event.tool === 'Write' || event.tool === 'Edit') {
@@ -653,7 +675,7 @@ function checkFileScope(event: Event, allowed: string[]): Violation | null {
 }
 ```
 
-**`inv.noCode()`**:
+**`rule.noCode()`**:
 ```typescript
 function checkNoCode(event: Event): Violation | null {
   if (event.tool === 'Write' || event.tool === 'Edit') {

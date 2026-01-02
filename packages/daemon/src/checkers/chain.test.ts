@@ -100,7 +100,7 @@ describe('CheckerChain with new checkers', () => {
           model: 'sonnet',
           role: 'implementation',
           tools: ['Read', 'Write'],
-          invariants: [
+          rules: [
             { type: 'tdd', options: { test: '**/*.test.ts', impl: 'src/**/*.ts' } },
             { type: 'fileScope', options: { getter: '["src/auth.ts"]' } },
             { type: 'externalTodo', options: { file: 'todo.md', checkBeforeStop: true } },
